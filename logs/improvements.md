@@ -1,1 +1,2 @@
 - Renamed src/engine/utils to utils.js and updated imports
+- Added schema validation for loading and saving game state
