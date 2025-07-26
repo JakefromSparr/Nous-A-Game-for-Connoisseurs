@@ -1,9 +1,10 @@
 
 // src/engine/questionEngine.js
 import { TRAIT_LOADINGS }   from '../constants/traitConfig.js';
+import { SCREENS } from '../constants/screens.js';
 import { State } from '../state.js';
-import { shuffle } from './utils.js';    
-import { CLASS_SCORES, TRAIT_MAP, CLASS_TRAIT_BASE } from '../constants/answerLogic.js';
+import { shuffle, clamp } from './utils.js';
+import { CLASS_SCORES, CLASS_TRAIT_BASE } from '../constants/answerLogic.js';
 
 
 export function draw(){
@@ -20,14 +21,52 @@ export function draw(){
 
 export function evaluate(letter){
   const S = State.getState();
-  /* replicate the big switch you had before:
-       – update tally
-       – score changes
-       – thread changes
-       – trait changes
-       – difficulty escalation
-  */
-  /* finally return { nextScreen, statePatch } so router can handle UI */
+  const q = S.currentQuestion;
+  const idx = String(letter).toUpperCase().charCodeAt(0) - 65; // A->0
+  const ans = S.currentAnswers[idx];
+
+  if (!q || !ans) {
+    console.error('[EVALUATE] Missing question or answer', letter);
+    return {};
+  }
+
+  const cls = ans.answerClass;
+  if (!cls) {
+    console.error('[EVALUATE] Missing classification for answer', letter);
+    return {};
+  }
+
+  // tally + history
+  S.roundAnswerTally[letter] = (S.roundAnswerTally[letter] || 0) + 1;
+  recordAnswer(q.questionId, letter);
+
+  // score + thread
+  const { points = 0, thread = 0 } = CLASS_SCORES[cls] || {};
+  S.score      += points;
+  S.roundScore += points;
+  S.thread      = Math.max(0, S.thread + thread);
+
+  // track streak of non-wrong answers
+  S.notWrongCount = cls === 'Wrong' ? 0 : S.notWrongCount + 1;
+
+  // trait deltas
+  applyTraitDelta(cls, q.questionId);
+
+  const patch = {
+    score         : S.score,
+    roundScore    : S.roundScore,
+    thread        : S.thread,
+    traits        : { ...S.traits },
+    lastClassification : cls,
+    lastAnswerCorrect  : cls !== 'Wrong',
+    currentQuestion : null,
+    currentAnswers  : []
+  };
+
+  return {
+    nextScreen: SCREENS.QUESTION_RESULT,
+    statePatch: patch
+  };
 }
 
 export function applyTraitDelta(cls, qId){
