@@ -1,5 +1,6 @@
 // src/state.js
 import { SCREENS } from './constants/screens.js';
+import { validateOnLoad, sanitizeBeforeSave } from './validator.js';
 
 /* ─────────── initial store ─────────── */
 let gameState = {
@@ -19,17 +20,28 @@ const patch    = (partial={}) => Object.assign(gameState, partial);
 const getState = ()            => gameState;
 
 const saveGame = () => {
-  try { localStorage.setItem('nous-save', JSON.stringify(gameState)); return true; }
-  catch(e){ console.error('[SAVE]',e); return false; }
+  try {
+    const { ok, data, errors } = sanitizeBeforeSave(gameState);
+    if (!ok) console.warn('[SAVE] state normalized with warnings', errors);
+    localStorage.setItem('nous-save', JSON.stringify(data));
+    return true;
+  } catch (e) {
+    console.error('[SAVE]', e);
+    return false;
+  }
 };
 
 const loadGame = () => {
   try {
-    const raw = localStorage.getItem('nous-save');
+    const raw = JSON.parse(localStorage.getItem('nous-save') || 'null');
     if (!raw) return false;
-    patch(JSON.parse(raw));
+    const res = validateOnLoad(raw);
+    if (!res.ok) return false;
+    gameState = { ...gameState, ...res.data };
     return true;
-  } catch(e){ console.error('[LOAD]',e); return false; }
+  } catch {
+    return false;
+  }
 };
 
 /* ─────────── deck loader ─────────── */

@@ -22,5 +22,8 @@
   "homepage": "https://github.com/JakefromASD/Nous#readme",
   "devDependencies": {
     "vite": "^7.0.6"
+  },
+  "dependencies": {
+    "zod": "^3.22.4"
   }
 }
