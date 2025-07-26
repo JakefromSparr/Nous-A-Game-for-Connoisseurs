@@ -43,18 +43,10 @@ Inspired by **Ouija**, cold-reading psychology, and asymmetrical horror games, i
 
 ```bash
 # clone & install
-git clone https://github.com/JakefromSparr/Nous.git
-cd Nous
+git clone # clone & install
+[https://github.com/JakefromSparr/Nous-A-Game-for-Connoisseurs]
+cd Nous-A-Game-for-Connoisseurs/main
 npm install      # installs dev server + linting
-
-# start local hot-reload server
-npm run dev
-## Final Reminder
-
-This is not a tool.  
-This is an *experience.*  
-Preserve the magic.
-
 
 src/
   constants/
@@ -72,3 +64,14 @@ src/
   ui.js                 # pure presentation
 public/
   index.html            # three buttons + screens
+cd Nous
+npm install      # installs dev server + linting
+
+# start local hot-reload server
+npm run dev
+## Final Reminder
+
+This is not a tool.  
+This is an *experience.*  
+Preserve the magic.
+
