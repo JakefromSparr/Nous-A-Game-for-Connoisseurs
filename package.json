@@ -1,0 +1,26 @@
+{
+  "name": "nous",
+  "version": "1.0.0",
+  "description": "README  # Nous: A Game for Connoisseurs",
+  "main": "service-worker.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JakefromASD/Nous.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/JakefromASD/Nous/issues"
+  },
+  "homepage": "https://github.com/JakefromASD/Nous#readme",
+  "devDependencies": {
+    "vite": "^7.0.6"
+  }
+}

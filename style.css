@@ -1,0 +1,269 @@
+
+/* === CSS Variables & Fonts === */
+:root {
+  --primary-bg: #1a120b;
+  --wood-dark: #3e2b16;
+  --wood-medium: #6f4f2c;
+  --wood-light: #8a6e4d;
+  --text-color: #d9c8a9;
+  --gold-foil-dark: #a88d3d;
+  --gold-foil-light: #f5e4c2;
+  --title-font: 'Cinzel Decorative', serif;
+  --body-font: 'EB Garamond', serif;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--primary-bg);
+  color: var(--text-color);
+  font-family: var(--body-font);
+  overflow: hidden;
+  background-image: linear-gradient(45deg, #3e2b16, #1a120b);
+  background-size: cover;
+}
+
+/* === Container Setup === */
+#app-container {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+/* === Screen Style === */
+.game-screen {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  width: 90%;
+  max-width: 800px;
+  min-height: 400px;
+  padding: 2rem;
+  background: radial-gradient(circle at center, #050505 0%, #000 80%);
+  border: 4px solid #2b1b0e;
+  border-radius: 12px;
+  box-shadow: inset 0 0 80px #000, 0 0 10px #000;
+  z-index: 1;
+}
+
+.game-screen.is-active {
+  display: flex;
+}
+
+/* === Typography === */
+h1, h2, h3, .gold-text {
+  font-family: var(--title-font);
+  background: linear-gradient(to top, var(--gold-foil-dark), var(--gold-foil-light));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+
+p, li {
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.subtitle {
+  font-size: 1.2rem;
+  font-family: var(--body-font);
+  letter-spacing: 2px;
+  margin-top: -1rem;
+  margin-bottom: 2rem;
+}
+
+/* === Wooden Buttons === */
+.wood-button {
+  background:
+    radial-gradient(ellipse at 30% 70%, transparent 0%, rgba(0,0,0,0.4) 100%),
+    linear-gradient(to right, var(--wood-medium), var(--wood-light) 30%, var(--wood-medium) 70%);
+  border: 4px solid #2b1b0e;
+  border-radius: 50%;
+  width: 140px;
+  height: 140px;
+  font-family: var(--title-font);
+  font-size: 1.2rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin: 1rem;
+  cursor: pointer;
+  box-shadow:
+    inset -4px -4px 8px rgba(0,0,0,0.7),
+    0px 5px 15px rgba(0,0,0,0.6);
+  transition: all 0.2s ease-out;
+}
+
+.wood-button:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow:
+    inset -3px -3px 6px rgba(0,0,0,0.6),
+    0px 8px 20px rgba(0,0,0,0.5);
+}
+
+.wood-button:active {
+  transform: translateY(1px) scale(1);
+  box-shadow:
+    inset 4px 4px 8px rgba(0,0,0,0.7),
+    0px 2px 5px rgba(0,0,0,0.6);
+}
+
+.wood-button:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--gold-foil-dark),
+    0 0 10px var(--gold-foil-light);
+}
+
+.wood-button .button-label {
+  background: linear-gradient(to top, var(--gold-foil-dark), var(--gold-foil-light));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.4);
+}
+
+/* === Welcome Option List === */
+#welcome-options {
+  list-style: none;
+  margin-top: 1rem;
+  padding: 0;
+  text-align: left;
+}
+
+#welcome-options li {
+  font-size: 1.5rem;
+  padding: 0.5rem 0;
+  margin: 0.5rem 0;
+  position: relative;
+}
+
+#welcome-options li.selected {
+  color: var(--gold-foil-light);
+}
+
+#welcome-options li.selected::before {
+  content: '▶';
+  position: absolute;
+  left: -1.5rem;
+  color: var(--gold-foil-light);
+}
+
+/* === Shuttle-style Controller Pointer === */
+#welcome-options li span {
+  display: inline-block;
+  width: 20px;
+  visibility: hidden;
+}
+
+#welcome-options li.selected span {
+  visibility: visible;
+}
+
+/* === Button Container === */
+.button-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 2rem;
+  z-index: 1;
+}
+
+button.hidden {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* === Controller Positioning === */
+#controller {
+  position: fixed;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  z-index: 101;
+}
+
+/* === Transition Overlay === */
+#app-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #000;
+  z-index: 100;
+  clip-path: circle(0 at 50% 50%);
+  transition: clip-path 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+
+#app-container.is-transitioning::before {
+  clip-path: circle(calc(max(100vw, 100vh)) at 50% 50%);
+  pointer-events: auto;
+}
+
+/* === Accessibility === */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* === Responsive === */
+@media (max-width: 600px) {
+  #app-container {
+    align-items: flex-start;
+    padding-top: 1rem;
+  }
+
+  #controller {
+    bottom: 0.5rem;
+  }
+}
+
+/* 1. tighter hidden state */
+button.hidden {
+  visibility: hidden;
+  opacity: 0;          /* NEW */
+  pointer-events: none;
+}
+
+/* 2. respect reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  #app-container::before {
+    transition: none;
+    clip-path: circle(0 at 50% 50%);
+  }
+  #app-container.is-transitioning::before {
+    clip-path: circle(0 at 50% 50%);
+  }
+}
+
+/* 3. lighter mobile shadows */
+@media (max-width: 600px) {
+  .wood-button {
+    box-shadow:
+      inset -3px -3px 6px rgba(0,0,0,0.6),
+      0px 3px 8px rgba(0,0,0,0.5);     /* smaller */
+  }
+}
