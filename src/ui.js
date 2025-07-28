@@ -38,12 +38,11 @@ export const UI = (() => {
   };
 
   /* ───── Screen swap ───── */
-  const pretty = (name) => String(name || '').replace(/_/g, ' ').toLowerCase();
+  const pretty = (name) => String(name || '').replace(/[-_]/g, ' ').toLowerCase();
 
   function updateScreen(name) {
     app?.classList.add('is-transitioning');
 
-    // next frame for smoother CSS transitions
     requestAnimationFrame(() => {
       screens.forEach((s) => {
         const active = s.dataset.screen === name;
@@ -56,7 +55,8 @@ export const UI = (() => {
       if (agentLog) agentLog.textContent = `Last state: ${name}`;
       if (ariaStatus) ariaStatus.textContent = pretty(name);
 
-      if (name === 'WELCOME') updateWelcomeHighlight();
+      // SCREENS are lowercase (e.g., 'welcome')
+      if (name === 'welcome') updateWelcomeHighlight();
       app?.classList.remove('is-transitioning');
     });
   }
@@ -74,10 +74,13 @@ export const UI = (() => {
       const txt = labels[i] ?? '';
       span.textContent = txt || ' ';
 
+      // Disabled if isDisabled(i) or if no label.
       const disabled = typeof isDisabled === 'function' ? !!isDisabled(i) : !txt;
       btn.disabled = disabled;
       btn.setAttribute('aria-disabled', String(disabled));
       btn.classList.toggle('disabled', disabled);
+
+      // Hidden ONLY if no label.
       btn.classList.toggle('hidden', !txt);
     }
   }
@@ -101,7 +104,7 @@ export const UI = (() => {
     }
   }
 
-  // Flexible: works with (q,answers[]) OR legacy q.choices.{A,B,C}
+  // Flexible: works with (q, answers[]) OR legacy q.choices.{A,B,C}
   function showQuestion(q, answers) {
     const title = q?.title || q?.category || '';
     const text  = q?.text  || q?.prompt   || '';
@@ -133,12 +136,30 @@ export const UI = (() => {
   }
 
   function showResult(r) {
-    const header = r?.correct ? 'Correct' : (r?.notWrong ? 'Not Wrong' : 'Wrong');
-    $('result-header')        ?.textContent = header;
-    $('result-question')      ?.textContent = r?.question     ?? '';
-    $('result-chosen-answer') ?.textContent = r?.answer       ?? '';
-    $('result-explanation')   ?.textContent = r?.explanation  ?? '';
-    $('result-outcome-message')?.textContent = r?.outcomeText ?? '';
+    // Header: prefer kind; fallback to boolean 'correct'
+    let headerText = 'Incorrect';
+    if (r?.kind === 'WRONG') headerText = 'Wrong';
+    if (r?.kind === 'TYPICAL') headerText = 'Not Wrong';
+    if (r?.kind === 'REVELATORY') headerText = 'Correct';
+    if (!r?.kind && typeof r?.correct === 'boolean') {
+      headerText = r.correct ? 'Correct' : 'Incorrect';
+    }
+
+    // Outcome message: use provided outcomeText if present; else compose from numbers
+    let outcomeMessage = '';
+    if (typeof r?.outcomeText === 'string' && r.outcomeText.trim()) {
+      outcomeMessage = r.outcomeText;
+    } else {
+      const pts = Number.isFinite(r?.pointsGained) ? r.pointsGained : 0;
+      const thd = Number.isFinite(r?.threadDelta)  ? r.threadDelta  : 0;
+      outcomeMessage = `+${pts} points, ${thd >= 0 ? '+' : ''}${thd} thread`;
+    }
+
+    $('result-header')         ?.textContent = headerText;
+    $('result-question')       ?.textContent = r?.questionText     ?? '';
+    $('result-chosen-answer')  ?.textContent = r?.chosenLabel      ?? '';
+    $('result-explanation')    ?.textContent = r?.explanation      ?? '';
+    $('result-outcome-message')?.textContent = outcomeMessage;
   }
 
   function showFailure(ptsLost) {
@@ -165,7 +186,7 @@ export const UI = (() => {
     return pCount;
   };
   const showParticipantEntry = () => {
-    pCount = 1; if (flavor) flavor.hidden = true; updatePDisp(); updateScreen('WAITING_ROOM');
+    pCount = 1; if (flavor) flavor.hidden = true; updatePDisp(); updateScreen('waiting-room');
   };
 
   return {
