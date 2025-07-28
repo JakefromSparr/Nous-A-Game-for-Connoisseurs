@@ -1,20 +1,12 @@
+// src/validator.js
 import { z } from 'zod';
+import { SCREENS } from './constants/screens.js';
 
-// Tweak to your actual screen ids
-export const Screen = z.enum([
-  'WELCOME','LOBBY','QUESTION','REVEAL','FATE','RESULTS','CREDITS'
-]);
+// Use your real screen ids (lowercase) so this never drifts
+export const Screen = z.enum(Object.values(SCREENS));
 
-// Button/answer keys
+// Shared bits
 export const ABC = z.enum(['A','B','C']);
-
-// If you already have tokens for powerups, use those strings here
-export const PowerUp = z.enum(['DOUBLE_POINTS_THIS_QUESTION','RETRY','HINT']).catch('HINT');
-
-const Answer = z.object({
-  key: ABC,
-  label: z.string()
-});
 
 const Tally = z.object({
   A: z.number().int().min(0),
@@ -22,9 +14,24 @@ const Tally = z.object({
   C: z.number().int().min(0),
 });
 
-const FateRef = z.object({ id: z.string() }).passthrough().nullable();
-const QuestionRef = z.object({ id: z.string() }).passthrough().nullable();
+const AnswerView = z.object({
+  key: ABC,
+  label: z.string(),
+  answerClass: z.string().optional(),
+  explanation: z.string().optional(),
+}).passthrough();
 
+const ActiveRoundEffect = z.object({
+  type: z.string(),
+  cardTitle: z.string().optional(),
+  note: z.string().optional(),
+  threadDelta: z.number().optional(),
+}).passthrough();
+
+const FateRef = z.any().nullable();       // we persist full cards, so allow passthrough
+const QuestionRef = z.any().nullable();   // same for current question
+
+// Persisted shape (arrays for Sets, tolerant for runtime-only fields)
 export const persistedGameStateSchema = z.object({
   schemaVersion: z.literal(1).default(1),
 
@@ -39,52 +46,60 @@ export const persistedGameStateSchema = z.object({
   roundNumber: z.number().int().min(1),
   roundScore: z.number().int().min(0),
 
-  thread: z.number().int().min(0),
-  audacity: z.number().int().min(0),
+  pendingBank: z.number().int().min(0).default(0),
 
+  thread: z.number().int().min(0),
+  nextRoundT0: z.number().int().min(0).nullable().default(null),
+  weavePrimed: z.boolean().default(false),
+
+  notWrongCount: z.number().int().min(0),
+
+  audacity: z.number().int().min(0),
   difficultyLevel: z.number().int().min(1),
   correctAnswersThisDifficulty: z.number().int().min(0),
 
-  // Persist as arrays (storage-friendly)
-  answeredQuestionIds: z.array(z.string()),
-  completedFateCardIds: z.array(z.string()),
+  // Sets are stored as arrays (ids can be number or string)
+  answeredQuestionIds: z.array(z.union([z.number(), z.string()])),
+  completedFateCardIds: z.array(z.union([z.number(), z.string()])),
 
-  activeRoundEffects: z.array(z.string()),      // keep simple for now
-  activePowerUps: z.array(PowerUp),
+  activeRoundEffects: z.array(ActiveRoundEffect),
+  activePowerUps: z.array(z.string()),
 
+  // Fate scaffolding
   currentFateCard: FateRef,
   pendingFateCard: FateRef,
   activeFateCard: FateRef,
+  fateChoices: z.array(z.any().nullable()).length(3),
 
+  // Question scaffolding
   currentQuestion: QuestionRef,
-  currentAnswers: z.array(Answer),
-
-  notWrongCount: z.number().int().min(0),
+  currentAnswers: z.array(AnswerView),
   currentCategory: z.string(),
 
   roundAnswerTally: Tally,
 
   traits: z.object({
-    X: z.number().int(),
-    Y: z.number().int(),
-    Z: z.number().int(),
+    X: z.number().int().min(-9).max(9),
+    Y: z.number().int().min(-9).max(9),
+    Z: z.number().int().min(-9).max(9),
   }),
+
+  lastOutcome: z.any().optional(),   // REVEAL payload
+
+  roundEndedBy: z.enum(['TIE_OFF', 'SEVER']).nullable(),
+  roundWon: z.boolean(),
 })
 .superRefine((s, ctx) => {
   if (s.roundsWon > s.roundsToWin) {
-    ctx.addIssue({ code: 'custom', message: 'roundsWon cannot exceed roundsToWin', path: ['roundsWon'] });
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'roundsWon cannot exceed roundsToWin', path: ['roundsWon'] });
   }
-  if (s.score < s.roundScore) {
-    ctx.addIssue({ code: 'custom', message: 'score must be \u2265 roundScore', path: ['score'] });
-  }
-  // Optional guard: at most one fate slot occupied at a time
+  // Only one fate slot at a time
   const slots = [s.currentFateCard, s.pendingFateCard, s.activeFateCard].filter(Boolean).length;
   if (slots > 1) {
-    ctx.addIssue({ code: 'custom', message: 'Only one fate card slot should be occupied', path: ['activeFateCard'] });
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Only one fate card slot should be occupied', path: ['activeFateCard'] });
   }
 });
 
-// Transform persisted arrays -> runtime Sets
 export const runtimeGameStateSchema = persistedGameStateSchema.transform((s) => ({
   ...s,
   answeredQuestionIds: new Set(s.answeredQuestionIds),
@@ -94,7 +109,6 @@ export const runtimeGameStateSchema = persistedGameStateSchema.transform((s) => 
 export function validateOnLoad(raw) {
   const parsed = persistedGameStateSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, errors: parsed.error.flatten() };
-  // transform to runtime (Sets etc.)
   const runtime = runtimeGameStateSchema.parse(parsed.data);
   return { ok: true, data: runtime };
 }
@@ -119,4 +133,3 @@ export function assertState(state) {
     if (!ok) console.error('[STATE INVALID]', errors);
   }
 }
-
