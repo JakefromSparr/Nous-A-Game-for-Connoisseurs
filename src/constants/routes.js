@@ -30,10 +30,11 @@ export const ROUTES = {
   [SCREENS.GAME_LOBBY]: {
     labels: [
       () => 'Turn Back',
-      s => (s.pendingFateCard ? 'Tempt Fate' : 'NOUS'),
+      // Tempt Fate is available only when no round-long effect is loaded
+      s => (Array.isArray(s.activeRoundEffects) && s.activeRoundEffects.length > 0 ? 'NOUS' : 'Tempt Fate'),
       () => 'Push On',
     ],
-    actions: ['back-to-welcome','enter-fate','to-round-lobby'], // UI disables center if no pendingFateCard
+    actions: ['back-to-welcome','tempt-fate','to-round-lobby'], // center uses the new 'tempt-fate' action
   },
 
   // ───────────── ROUND LOBBY ─────────────
