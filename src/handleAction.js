@@ -207,10 +207,15 @@ const ACTIONS = {
   /* FATE RESULT */
   'fate-fight'  : () => ({ next: SCREENS.ROUND_LOBBY }), // taunt placeholder
   'fate-accept' : () => {
-    const s = State.getState();
-    // Apply Fate math, then finalize round atomically in the engine
-    const fateRes = Fate.resolveRound(s.roundAnswerTally, s.roundWon);
-    const patch = Round.finalizeRound(s, fateRes);
+  const s = State.getState();
+  const fateRes = Fate.resolveRound(s.roundAnswerTally, s.roundWon);
+  const patch = Round.finalizeRound(s, fateRes);
+  const roundsWonNext = (s.roundsWon || 0) + (s.roundWon ? 1 : 0);
+  const next = roundsWonNext >= (s.roundsToWin || 3)
+    ? SCREENS.FINAL_READING
+    : SCREENS.GAME_LOBBY;
+  return { patch, next };
+},
 
     // Decide next: if the round you just finalized got you to the threshold, go to Final Reading
     const roundsWonNext = (s.roundsWon || 0) + (s.roundWon ? 1 : 0);
@@ -222,8 +227,12 @@ const ACTIONS = {
   },
 
   /* THREAD SEVERED */
-  'sever-ack'   : () => ({ next: SCREENS.GAME_LOBBY }),
-
+  'sever-ack' : () => {
+  const s = State.getState();
+  const patch = Round.finalizeSever(s);
+  const next = (s.lives || 0) <= 0 ? SCREENS.GAME_OVER : SCREENS.GAME_LOBBY;
+  return { patch, next };
+},
   /* META */
   'reading-a'   : () => ({}),
   'reading-b'   : () => ({}),
