@@ -111,7 +111,7 @@ async function loadData() {
 // ===== Lifecycle =====
 function initializeGame(participants = 1) {
   patch({
-    currentScreen: SCREENS.WAITING_ROOM,
+    currentScreen: SCREENS.GAME_LOBBY, // Go to lobby after setup
 
     // game meta
     lives: Math.max(1, Number(participants) || 1) + 1, // “Strange, I’m seeing N+1…”
@@ -158,31 +158,6 @@ function initializeGame(participants = 1) {
   });
 }
 
-// Start a round (called when entering ROUND_LOBBY)
-function startNewRound() {
-  const t0 = typeof gameState.nextRoundT0 === 'number' ? gameState.nextRoundT0 : DEFAULTS.baseT0;
-
-  patch({
-    roundScore: 0,
-    notWrongCount: 0,
-    thread: t0,
-    weavePrimed: false,
-
-    currentQuestion: null,
-    currentAnswers: [],
-    currentCategory: '',
-    roundAnswerTally: emptyTally(),
-
-    pendingFateCard: null,
-    activeFateCard: null,
-    fateChoices: [null, null, null],
-
-    roundEndedBy: null,
-    roundWon: false,
-  });
-}
-
-
 // Spend 1 thread in Round Lobby to prime double points for the next question
 function spendThreadToWeave() {
   if (gameState.thread <= 0 || gameState.weavePrimed) return false;
@@ -199,7 +174,6 @@ export const State = {
   // lifecycle
   loadData,
   initializeGame,
-  startNewRound,
 
   // persistence
   saveGame,
