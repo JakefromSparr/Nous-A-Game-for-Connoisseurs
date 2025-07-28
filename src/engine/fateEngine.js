@@ -5,16 +5,6 @@ import { State } from '../state.js';
 let immediateScore = 0;     // global points added at Fate Resolution
 let roundEffects   = [];    // effects that apply to pending bank/tally at resolution
 
-/* ---- tiny util to expose "Active Divinations" in the lobby HUD ---- */
-function addActiveEffectTag(type, cardTitle, note) {
-  const S = State.getState();
-  S.activeRoundEffects = Array.isArray(S.activeRoundEffects) ? S.activeRoundEffects : [];
-  // de-dup by card title
-  if (!S.activeRoundEffects.some(e => e.cardTitle === cardTitle)) {
-    S.activeRoundEffects.push({ type, cardTitle, note });
-  }
-}
-
 /* Normalize 0..3 options → array of length 3 with null placeholders */
 function normalizeFateChoices(options = []) {
   const out = [null, null, null];
@@ -30,7 +20,7 @@ function normalizeFateChoices(options = []) {
 }
 
 /* Arm a pending card: set activeFateCard + fateChoices; clear pending */
-export function armFate(card, state) {
+export function armFate(card /*, state */) {
   const opts = Array.isArray(card?.choices) ? card.choices : (card?.options || []);
   return {
     activeFateCard: card ?? null,
@@ -39,16 +29,32 @@ export function armFate(card, state) {
   };
 }
 
-/* Apply a chosen fate option (pure patch), clear active card */
+/* Apply a chosen fate option (pure: return a patch) */
 export function applyChoice(choice, state) {
   if (!choice?.effect) {
+    // null/ignored choice just clears the card
     return { activeFateCard: null, fateChoices: [null, null, null] };
   }
 
+  // Apply the effect (may mutate runtime state or buffers)
   applyEffect(choice.effect, state.activeFateCard?.title || '');
+
+  // Mark the card as completed (Set mutation is fine)
   state.completedFateCardIds?.add?.(state.activeFateCard?.id);
 
-  return { activeFateCard: null, fateChoices: [null, null, null] };
+  // Mirror to Lobby “Active Divinations” (dedupe by card title)
+  const title = state.activeFateCard?.title || '';
+  const nextEffects = Array.isArray(state.activeRoundEffects) ? [...state.activeRoundEffects] : [];
+  if (title && !nextEffects.some(e => e.cardTitle === title)) {
+    nextEffects.push({ type: choice.effect.type, cardTitle: title });
+  }
+
+  // Return a patch; router applies it
+  return {
+    activeRoundEffects: nextEffects,
+    activeFateCard: null,
+    fateChoices: [null, null, null],
+  };
 }
 
 /* Resolve all armed fate effects at end of round (FATE_RESULT → Accept) */
@@ -87,21 +93,20 @@ export function resolveRound(tally /* {A,B,C} */, won /* boolean */) {
         if (a === max) winners.push('A');
         if (b === max) winners.push('B');
         if (c === max) winners.push('C');
-        // Friendly rule: ties count as a "correct" prediction if pred is among winners.
+        // Friendly rule: ties count as "correct" if pred is among winners.
         if (winners.includes(pred)) roundMultiplier *= 2;
         break;
       }
 
       case 'ROUND_MODIFIER': {
-        // Light mechanic: if you "survive" (win the round), gain +3 global points.
-        // You can encode a custom reward on the card via e.reward as well.
+        // If you "survive" (win the round), gain +3 global points (or custom reward)
         const bonus = (e.reward?.type === 'SCORE') ? (Number(e.reward.value) || 0) : 3;
         if (won) scoreDelta += bonus;
         break;
       }
 
       default:
-        // unknown round effect: ignore safely
+        // ignore unknown safely
         break;
     }
   });
@@ -117,7 +122,7 @@ export function resolveRound(tally /* {A,B,C} */, won /* boolean */) {
 function applyEffect(effect, cardTitle = '') {
   const S = State.getState();
 
-  // Allow a single choice to carry multiple effects: effect can be an array.
+  // Allow a single choice to carry multiple effects
   if (Array.isArray(effect)) {
     effect.forEach(e => applyEffect(e, cardTitle));
     return;
@@ -128,18 +133,16 @@ function applyEffect(effect, cardTitle = '') {
   switch (e.type) {
     case 'IMMEDIATE_SCORE':
       immediateScore += Number(e.value || 0);
-      addActiveEffectTag('IMMEDIATE_SCORE', cardTitle, `+${e.value} now`);
       break;
 
     case 'SCORE':
+      // straight into this round’s score
       S.roundScore = (S.roundScore || 0) + Number(e.value || 0);
-      addActiveEffectTag('SCORE', cardTitle, `${e.value >= 0 ? '+' : ''}${e.value} to round`);
       break;
 
     case 'POWER_UP':
       S.activePowerUps = Array.isArray(S.activePowerUps) ? S.activePowerUps : [];
       S.activePowerUps.push(e.power);
-      addActiveEffectTag('POWER_UP', cardTitle, String(e.power));
       break;
 
     case 'APPLY_WAGER':
@@ -149,7 +152,6 @@ function applyEffect(effect, cardTitle = '') {
         reward: e.reward,
         cardTitle,
       });
-      addActiveEffectTag('APPLY_WAGER', cardTitle, `+${e.reward?.value || 0} per ${(String(e.target||'').split('-').pop()||'').toUpperCase()}`);
       break;
 
     case 'TALLY_TABLE':
@@ -159,7 +161,6 @@ function applyEffect(effect, cardTitle = '') {
         table : e.table || {},
         cardTitle,
       });
-      addActiveEffectTag('TALLY_TABLE', cardTitle, 'tally rule');
       break;
 
     case 'ROUND_PREDICTION':
@@ -168,7 +169,6 @@ function applyEffect(effect, cardTitle = '') {
         predict: String(e.prediction || e.predict || '').toUpperCase(),
         cardTitle,
       });
-      addActiveEffectTag('ROUND_PREDICTION', cardTitle, `predict ${String(e.prediction || e.predict || '').toUpperCase()}`);
       break;
 
     case 'ROUND_MODIFIER':
@@ -178,23 +178,20 @@ function applyEffect(effect, cardTitle = '') {
         reward: e.reward, // optional { type:'SCORE', value:n }
         cardTitle,
       });
-      addActiveEffectTag('ROUND_MODIFIER', cardTitle, String(e.modifier || '').toUpperCase());
       break;
 
     case 'ROUND_START':
-      // one-shot bonus that applies when the next round starts (e.g., +1 thread)
+      // Persist until the next round begins (Round.startRound should apply these)
       S.activeRoundEffects = Array.isArray(S.activeRoundEffects) ? S.activeRoundEffects : [];
       S.activeRoundEffects.push({
         type: 'ROUND_START',
         threadDelta: Number(e.threadDelta || 0),
         cardTitle,
       });
-      addActiveEffectTag('ROUND_START', cardTitle, `thread +${Number(e.threadDelta || 0)}`);
       break;
 
     default:
-      // default: treat as a round-end effect we don't yet exploit, but show it in HUD
+      // default: record as a round-end effect we don't explicitly model yet
       roundEffects.push({ ...e, cardTitle });
-      addActiveEffectTag(String(e.type || 'EFFECT'), cardTitle, '');
   }
 }
