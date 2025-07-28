@@ -1,34 +1,37 @@
 // src/script.js
 import { UI } from './ui.js';
 import { State } from './state.js';
-import { handleAction, refreshUI } from './handleAction.js'; // refreshUI is a 1-liner we add below
+import { handleAction, refreshUI } from './handleAction.js';
 import { ROUTES, guardRoutes } from './constants/routes.js';
 import { SCREENS } from './constants/screens.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
-  // 1) Load decks, then try restoring save
+  // 1) Load decks from JSON files, then try restoring a saved game state.
   await State.loadData();
   State.loadGame?.();
 
-  // 2) Guard routes once at boot
+  // 2) Guard routes once at boot to ensure state transitions are valid.
   guardRoutes(ROUTES);
 
-  // 3) Ensure we’re on a valid screen (fallback to WELCOME)
+  // 3) Ensure we’re on a valid screen; otherwise, fall back to the WELCOME screen.
   const s = State.getState();
   if (!ROUTES[s.currentScreen]) {
     State.patch({ currentScreen: SCREENS.WELCOME });
   }
 
-  // 4) Initial render
+  // 4) Perform the initial UI render based on the current state.
   refreshUI();
 
-  // 5) Controller events (0-based buttons)
+  // 5) Set up the main controller event listener for user actions.
+  // It delegates clicks on buttons with a `data-btn` attribute.
   document.getElementById('controller')?.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-btn]');
-    if (!btn) return;
+    if (!btn) return; // Ignore clicks that are not on a button
+    
+    // Pass the button's index (0, 1, or 2) to the handler.
     handleAction(parseInt(btn.dataset.btn, 10) || 0);
   });
 
-  // 6) Persist on exit
+  // 6) Persist the game state to localStorage when the user leaves.
   window.addEventListener('beforeunload', () => State.saveGame?.());
 });
