@@ -1,15 +1,16 @@
 // src/engine/questionEngine.js
 import { State } from '../state.js';
-import { shuffle } from './utils.js';
+import { shuffle, clamp } from './utils.js';
 import { OUTCOME, OUTCOME_EFFECT, WEAVE } from '../constants/answerLogic.js';
+import { TRAIT_LOADINGS } from '../constants/traitConfig.js';
+import { CLASS_TRAIT_BASE } from '../constants/answerLogic.js';
 
 // Toggleable demo fallback: allow repeats if the tier pool is exhausted.
-// Keep FALSE to enforce "exhaust before repeat" per spec.
 const ALLOW_REPEATS_WHEN_EXHAUSTED = false;
 
 /* ---------- Outcome fallback (legacy decks only) ---------- */
 function getKind(q, key) {
-  // Legacy explicit map (rare in your deck)
+  // Legacy explicit map
   if (q.answerKinds && q.answerKinds[key]) return q.answerKinds[key];
 
   // Legacy fallback: q.correct marks TYPICAL; one other REVELATORY; last WRONG
@@ -33,6 +34,28 @@ function buildAnswers(q) {
     answerClass: String(a.answerClass || '').toUpperCase(), // TYPICAL/REVELATORY/WRONG
     explanation: a.explanation ?? '',
   }));
+}
+
+/* ---------- Trait application per answer ---------- */
+const toTitle = (clsUpper) => clsUpper ? (clsUpper[0] + clsUpper.slice(1).toLowerCase()) : '';
+
+function applyTraitDelta(questionId, kindUpper) {
+  const S = State.getState();
+  const titleKey = toTitle(kindUpper); // 'TYPICAL' -> 'Typical', etc.
+
+  const cfg = TRAIT_LOADINGS[questionId] || {};
+  const wt  = cfg.axisWeight || {};                   // e.g., { Z: 1.5 }
+  const ov  = (cfg.overrides && cfg.overrides[titleKey]) || null;
+  const base = CLASS_TRAIT_BASE[titleKey] || { X:0, Y:0, Z:0 };
+
+  // override wins; else base * weight (default weight 1.0)
+  ['X','Y','Z'].forEach(axis => {
+    const overrideVal = ov && (ov[axis] ?? null);
+    const weight      = (wt[axis] != null) ? wt[axis] : 1;
+    const delta       = (overrideVal != null) ? overrideVal : (base[axis] || 0) * weight;
+
+    S.traits[axis] = clamp((S.traits[axis] || 0) + delta, -9, 9);
+  });
 }
 
 /* ---------- Draw next question (tier + exhaustion) ---------- */
@@ -101,6 +124,9 @@ export function evaluate(choiceIndex, _state) {
   // Exhaust this question id
   S.answeredQuestionIds?.add?.(q.id);
 
+  // Apply TRAIT deltas (per question config)
+  applyTraitDelta(q.id, kind);
+
   const patch = {
     roundScore: (S.roundScore || 0) + gainedPts,
     thread: (S.thread || 0) + (eff.threadDelta || 0),
@@ -114,7 +140,7 @@ export function evaluate(choiceIndex, _state) {
     currentQuestion: S.currentQuestion,
     currentAnswers : S.currentAnswers,
     lastOutcome: {
-      kind,
+      kind,                                  // 'TYPICAL' | 'REVELATORY' | 'WRONG'
       chosenKey: key,
       chosenLabel: a.label || key,
       pointsGained: gainedPts,
