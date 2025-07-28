@@ -222,3 +222,9 @@ export function handleAction(btnIndex) {
   const res = fn() || {};
   applyResult(res);
 }
+// at bottom of src/handleAction.js
+export function refreshUI() { 
+  // re-evaluate labels/disabled with current state
+  applyResult({});
+}
+
