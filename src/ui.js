@@ -2,130 +2,170 @@
 // Pure presentation layer – no game logic, no routing.
 
 export const UI = (() => {
-  /* ─────────────── DOM refs ─────────────── */
-  const app         = document.getElementById('app-container');
-  const controller  = document.getElementById('controller');
-  const ariaStatus  = document.getElementById('aria-status');
-  const agentLog    = document.getElementById('last-change');
+  /* ───── DOM refs ───── */
+  const app        = document.getElementById('app-container');
+  const controller = document.getElementById('controller');
+  const ariaStatus = document.getElementById('aria-status');
+  const agentLog   = document.getElementById('last-change');
 
+  // 0-based controller buttons (ids must be btn0/btn1/btn2 in index.html)
   const buttons = [
-    document.getElementById('btn-1'),
-    document.getElementById('btn-2'),
-    document.getElementById('btn-3')
+    document.getElementById('btn0'),
+    document.getElementById('btn1'),
+    document.getElementById('btn2'),
   ];
-  const screens = document.querySelectorAll('.game-screen');
+  const screens = Array.from(document.querySelectorAll('.game-screen'));
 
-  /* welcome-screen list navigation ------------------------------ */
-  const welcomeLis  = Array.from(document.querySelectorAll('#welcome-options li'));
-  let   welcomeIdx  = 0;
+  /* ───── Welcome list navigation ───── */
+  const welcomeLis = Array.from(document.querySelectorAll('#welcome-options li'));
+  let welcomeIdx = 0;
+
+  const getWelcomeSelection = () =>
+    (welcomeLis[welcomeIdx]?.textContent || '')
+      .replace(/^\s*[^A-Za-z0-9]*/, '')
+      .trim();
+
   const updateWelcomeHighlight = () => {
-    welcomeLis.forEach((li,i)=>li.classList.toggle('selected', i===welcomeIdx));
-    ariaStatus.textContent = getWelcomeSelection();
+    welcomeLis.forEach((li, i) => li.classList.toggle('selected', i === welcomeIdx));
+    if (ariaStatus) ariaStatus.textContent = getWelcomeSelection();
   };
-  const moveWelcomeSelection = dir=>{
-    if (dir==='up'  ) welcomeIdx=(welcomeIdx-1 + welcomeLis.length)%welcomeLis.length;
-    if (dir==='down') welcomeIdx=(welcomeIdx+1)%welcomeLis.length;
+
+  const moveWelcomeSelection = (dir) => {
+    if (!welcomeLis.length) return;
+    if (dir === 'up')   welcomeIdx = (welcomeIdx - 1 + welcomeLis.length) % welcomeLis.length;
+    if (dir === 'down') welcomeIdx = (welcomeIdx + 1) % welcomeLis.length;
     updateWelcomeHighlight();
   };
-  const getWelcomeSelection   = ()=>
-    welcomeLis[welcomeIdx]?.textContent.replace(/^\s*[^A-Za-z0-9]*/, '').trim() || '';
 
-  /* screen swap ------------------------------------------------- */
-  function updateScreen(name){
-    app.classList.add('is-transitioning');
+  /* ───── Screen swap ───── */
+  const pretty = (name) => String(name || '').replace(/_/g, ' ').toLowerCase();
 
-    setTimeout(()=>{
-      screens.forEach(s=>{
-        s.classList.toggle('is-active', s.dataset.screen===name);
-        s.setAttribute('aria-hidden', s.dataset.screen!==name);
+  function updateScreen(name) {
+    app?.classList.add('is-transitioning');
+
+    // next frame for smoother CSS transitions
+    requestAnimationFrame(() => {
+      screens.forEach((s) => {
+        const active = s.dataset.screen === name;
+        s.classList.toggle('is-active', active);
+        s.setAttribute('aria-hidden', String(!active));
       });
 
-      app.setAttribute       ('data-game-state',      name);
-      controller.setAttribute('data-controller-state',name);
-      agentLog.textContent   = `Last state: ${name}`;
-      ariaStatus.textContent = name.replace(/-/g,' ');
+      app?.setAttribute('data-game-state', name);
+      controller?.setAttribute('data-controller-state', name);
+      if (agentLog) agentLog.textContent = `Last state: ${name}`;
+      if (ariaStatus) ariaStatus.textContent = pretty(name);
 
-      if (name==='welcome') updateWelcomeHighlight();
-      app.classList.remove('is-transitioning');
-    }, 700);
-  }
-
-  /* button-label swap ------------------------------------------- */
-  function setButtonLabels([l1='',l2='',l3='']){
-    [l1,l2,l3].forEach((txt,i)=>{
-      const btn   = buttons[i];
-      const span  = btn.querySelector('.button-label');
-      span.textContent = txt || ' ';
-      btn.disabled     = !txt;
-      btn.classList.toggle('hidden', !txt);
+      if (name === 'WELCOME') updateWelcomeHighlight();
+      app?.classList.remove('is-transitioning');
     });
   }
 
-  /* HUD / Question / Fate rendering ----------------------------- */
-  const ids = sel=>document.getElementById(sel);
+  /* ───── Controller labels/disabled states ─────
+     - labels: array of 3 strings
+     - isDisabled: optional fn(index)->boolean for per-button disabled logic
+  */
+  function setButtonLabels(labels = ['', '', ''], isDisabled) {
+    for (let i = 0; i < 3; i++) {
+      const btn = buttons[i];
+      if (!btn) continue;
 
-  function updateDisplayValues(data){
-    if ('lives'        in data) ids('lives-display')      .textContent=data.lives;
-    if ('roundsToWin'  in data && 'roundsWon' in data){
-      ids('rounds-display').textContent=data.roundsToWin-data.roundsWon;
+      const span = btn.querySelector('.button-label') || btn;
+      const txt = labels[i] ?? '';
+      span.textContent = txt || ' ';
+
+      const disabled = typeof isDisabled === 'function' ? !!isDisabled(i) : !txt;
+      btn.disabled = disabled;
+      btn.setAttribute('aria-disabled', String(disabled));
+      btn.classList.toggle('disabled', disabled);
+      btn.classList.toggle('hidden', !txt);
     }
-    if ('score'        in data) ids('score-display')      .textContent=data.score;
-    if ('thread'       in data) ids('thread-display')     .textContent=data.thread;
-    if ('roundScore'   in data) ids('round-score')        .textContent=data.roundScore;
-    if ('roundNumber'  in data) ids('round-number-display').textContent=data.roundNumber;
-    if ('currentCategory' in data) ids('category-hint')   .textContent=data.currentCategory;
-    if ('activeRoundEffects' in data){
-      const titles=data.activeRoundEffects.map(e=>e.cardTitle).filter(Boolean);
-      ids('divinations-display').querySelector('p').textContent=titles.length?titles.join(', '):'[None]';
+  }
+
+  /* ───── HUD / Question / Fate rendering ───── */
+  const $ = (id) => document.getElementById(id);
+
+  function updateDisplayValues(data) {
+    if ('lives'       in data) $('lives-display')?.textContent = data.lives;
+    if ('roundsToWin' in data && 'roundsWon' in data) $('rounds-display')?.textContent = (data.roundsToWin - data.roundsWon);
+    if ('score'       in data) $('score-display')?.textContent = data.score;
+    if ('thread'      in data) $('thread-display')?.textContent = data.thread;
+    if ('roundScore'  in data) $('round-score')?.textContent = data.roundScore;
+    if ('roundNumber' in data) $('round-number-display')?.textContent = data.roundNumber;
+    if ('currentCategory' in data) $('category-hint')?.textContent = data.currentCategory || '[Faded Ink]';
+
+    if ('activeRoundEffects' in data && Array.isArray(data.activeRoundEffects)) {
+      const titles = data.activeRoundEffects.map((e) => e.cardTitle).filter(Boolean);
+      const divTxt = $('divinations-text') || document.querySelector('#divinations-display p');
+      if (divTxt) divTxt.textContent = titles.length ? titles.join(', ') : '[None]';
     }
   }
 
-  function showQuestion(q){
-    ids('question-title').textContent=q.title||'';
-    ids('question-text' ).textContent=q.text ||'';
-    ids('answer-a').textContent=q.choices?.A||'';
-    ids('answer-b').textContent=q.choices?.B||'';
-    ids('answer-c').textContent=q.choices?.C||'';
+  // Flexible: works with (q,answers[]) OR legacy q.choices.{A,B,C}
+  function showQuestion(q, answers) {
+    const title = q?.title || q?.category || '';
+    const text  = q?.text  || q?.prompt   || '';
+    const arr   = Array.isArray(answers)
+      ? answers
+      : [
+          { label: q?.choices?.A ?? '' },
+          { label: q?.choices?.B ?? '' },
+          { label: q?.choices?.C ?? '' },
+        ];
+
+    $('question-title')?.textContent = title;
+    $('question-text') ?.textContent = text;
+    $('answer-a')      ?.textContent = arr[0]?.label ?? '';
+    $('answer-b')      ?.textContent = arr[1]?.label ?? '';
+    $('answer-c')      ?.textContent = arr[2]?.label ?? '';
   }
 
-  function showFateCard(card){
-    ids('fate-card-title').textContent=card.title;
-    ids('fate-card-text' ).textContent=card.text;
+  function showFateCard(card) {
+    $('fate-card-title')?.textContent = card?.title ?? '';
+    $('fate-card-text') ?.textContent = card?.text  ?? '';
   }
 
-  function showFateChoices(labels=[]){
-    while(labels.length<3) labels.push('');
-    setButtonLabels(labels);
+  // For on-screen text (controller labels come from ROUTES via setButtonLabels)
+  function showFateChoicesFromState(state) {
+    $('fate-a-text')?.textContent = state?.fateChoices?.[0]?.label ?? 'NOUS';
+    $('fate-b-text')?.textContent = state?.fateChoices?.[1]?.label ?? 'NOUS';
+    $('fate-c-text')?.textContent = state?.fateChoices?.[2]?.label ?? 'NOUS';
   }
 
-  function showResult(r){
-    ids('result-header'        ).textContent=r.correct?'Correct':'Incorrect';
-    ids('result-question'      ).textContent=r.question;
-    ids('result-chosen-answer' ).textContent=r.answer;
-    ids('result-explanation'   ).textContent=r.explanation;
-    ids('result-outcome-message').textContent=r.outcomeText;
+  function showResult(r) {
+    const header = r?.correct ? 'Correct' : (r?.notWrong ? 'Not Wrong' : 'Wrong');
+    $('result-header')        ?.textContent = header;
+    $('result-question')      ?.textContent = r?.question     ?? '';
+    $('result-chosen-answer') ?.textContent = r?.answer       ?? '';
+    $('result-explanation')   ?.textContent = r?.explanation  ?? '';
+    $('result-outcome-message')?.textContent = r?.outcomeText ?? '';
   }
 
-  function showFailure(ptsLost){
-    ids('lost-points-display').textContent=ptsLost;
+  function showFailure(ptsLost) {
+    $('lost-points-display')?.textContent = ptsLost ?? 0;
   }
 
-  function showFateResult(txt){
-    if (txt){ console.log('[FATE RESULT]',txt); alert(txt); }
+  function showFateResult(text) {
+    const el = $('divination-outcome');
+    if (el) el.textContent = text ?? '';
   }
 
-  /* participant mini-view --------------------------------------- */
-  const countDisp = ids('participant-count-display');
-  const flavor    = ids('participant-flavor');
+  /* ───── Participants mini‑view ───── */
+  const countDisp = $('participant-count-display');
+  const flavor    = $('participant-flavor');
   let   pCount    = 1;
-  const updatePDisp       = ()=>{ countDisp.textContent=pCount; };
-  const showParticipantEntry=()=>{
-    pCount=1; flavor.hidden=true; updatePDisp(); updateScreen('participants');
+
+  const updatePDisp = () => { if (countDisp) countDisp.textContent = pCount; };
+  const adjustParticipantCount = (d) => { pCount = Math.max(1, Math.min(20, pCount + d)); updatePDisp(); };
+  const confirmParticipants = () => {
+    if (flavor) {
+      flavor.textContent = `Strange... it looks like there are ${pCount + 1} of you here. Ah well.`;
+      flavor.hidden = false;
+    }
+    return pCount;
   };
-  const adjustParticipantCount=(d)=>{ pCount=Math.max(1,Math.min(20,pCount+d)); updatePDisp(); };
-  const confirmParticipants =()=>{
-    flavor.textContent=`Strange... it looks like there are ${pCount+1} of you here. Ah well.`;
-    flavor.hidden=false; return pCount;
+  const showParticipantEntry = () => {
+    pCount = 1; if (flavor) flavor.hidden = true; updatePDisp(); updateScreen('WAITING_ROOM');
   };
 
   return {
@@ -135,19 +175,24 @@ export const UI = (() => {
     updateDisplayValues,
 
     /* rendering helpers */
-    showQuestion, showFateCard, showFateChoices,
-    showResult,   showFailure,  showFateResult,
+    showQuestion,
+    showFateCard,
+    showFateChoices: (labels) => setButtonLabels(labels), // legacy usage; routes normally provide labels
+    showFateChoicesFromState,
+    showResult,
+    showFailure,
+    showFateResult,
 
     /* welcome nav */
-    moveWelcomeSelection:dir=>moveWelcomeSelection(dir),
+    moveWelcomeSelection: (dir) => moveWelcomeSelection(dir),
     getWelcomeSelection,
 
     /* participant dialog */
     showParticipantEntry,
     adjustParticipantCount,
-    getParticipantCount:()=>pCount,
-    confirmParticipants
+    getParticipantCount: () => pCount,
+    confirmParticipants,
   };
 })();
 
-if (typeof window!=='undefined') window.UI = UI;
+if (typeof window !== 'undefined') window.UI = UI;
