@@ -1,10 +1,9 @@
 // src/constants/routes.js
 import { SCREENS } from './screens.js';
 
-// Canonical: exactly 3 labels and 3 actions per screen.
-// labels[i] may be a string or (state)=>string
-// actions[i] is a string or null (null => disabled taunt)
-
+// Exactly 3 labels and 3 actions per screen.
+// labels[i]: string | (state)=>string
+// actions[i]: string | null  (null = visible but disabled / taunt)
 export const ROUTES = {
   // ───────────── ENTRY ─────────────
   [SCREENS.WELCOME]: {
@@ -19,7 +18,7 @@ export const ROUTES = {
 
   [SCREENS.RULES]: {
     labels: ['I’ve Heard Enough','NOUS','Tell Me More'],
-    actions: ['back-to-welcome', null, 'rules-more'], // Plead-style taunt in middle
+    actions: ['back-to-welcome', null, 'rules-more'],   // middle is a taunt
   },
 
   [SCREENS.OPTIONS]: {
@@ -34,7 +33,7 @@ export const ROUTES = {
       s => (s.pendingFateCard ? 'Tempt Fate' : 'NOUS'),
       () => 'Push On',
     ],
-    actions: ['back-to-welcome','enter-fate','to-round-lobby'], // UI will disable center when NOUS
+    actions: ['back-to-welcome','enter-fate','to-round-lobby'], // UI disables center if no pendingFateCard
   },
 
   // ───────────── ROUND LOBBY ─────────────
@@ -56,10 +55,10 @@ export const ROUTES = {
   // ───────────── REVEAL ─────────────
   [SCREENS.REVEAL]: {
     labels: ['Fight Fate','Plead Case','Accept Fate'],
-    actions: ['reveal-fight', null, 'reveal-accept'], // Plead is a taunt
+    actions: ['reveal-fight', null, 'reveal-accept'],   // Plead Case = null (visible, disabled)
   },
 
-  // ───────────── FATE (1–3 options; holes = NOUS) ─────────────
+  // ───────────── FATE (1–3 options; holes render NOUS) ─────────────
   [SCREENS.FATE]: {
     labels: [
       s => s.fateChoices?.[0]?.label ?? 'NOUS',
@@ -72,13 +71,13 @@ export const ROUTES = {
   // ───────────── FATE RESULT ─────────────
   [SCREENS.FATE_RESULT]: {
     labels: ['Fight Fate','Plead Case','Accept Fate'],
-    actions: ['fate-fight', null, 'fate-accept'], // Plead is a taunt
+    actions: ['fate-fight', null, 'fate-accept'],       // Plead Case = null
   },
 
   // ───────────── THREAD SEVERED ─────────────
   [SCREENS.THREAD_SEVERED]: {
     labels: ['NOUS','NO USE','NOUS'],
-    actions: [null, 'sever-ack', null], // only center does something
+    actions: [null, 'sever-ack', null],                 // only center does anything
   },
 
   // ───────────── FINAL READING / CREDITS ─────────────
