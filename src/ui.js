@@ -38,11 +38,12 @@ export const UI = (() => {
   };
 
   /* ───── Screen swap ───── */
-  const pretty = (name) => String(name || '').replace(/[-_]/g, ' ').toLowerCase();
+  const pretty = (name) => String(name || '').replace(/_/g, ' ').toLowerCase();
 
   function updateScreen(name) {
     app?.classList.add('is-transitioning');
 
+    // next frame for smoother CSS transitions
     requestAnimationFrame(() => {
       screens.forEach((s) => {
         const active = s.dataset.screen === name;
@@ -55,16 +56,12 @@ export const UI = (() => {
       if (agentLog) agentLog.textContent = `Last state: ${name}`;
       if (ariaStatus) ariaStatus.textContent = pretty(name);
 
-      // SCREENS are lowercase (e.g., 'welcome')
-      if (name === 'welcome') updateWelcomeHighlight();
+      if (name === 'WELCOME') updateWelcomeHighlight();
       app?.classList.remove('is-transitioning');
     });
   }
 
-  /* ───── Controller labels/disabled states ─────
-     - labels: array of 3 strings
-     - isDisabled: optional fn(index)->boolean for per-button disabled logic
-  */
+  /* ───── Controller labels/disabled states ───── */
   function setButtonLabels(labels = ['', '', ''], isDisabled) {
     for (let i = 0; i < 3; i++) {
       const btn = buttons[i];
@@ -74,13 +71,10 @@ export const UI = (() => {
       const txt = labels[i] ?? '';
       span.textContent = txt || ' ';
 
-      // Disabled if isDisabled(i) or if no label.
       const disabled = typeof isDisabled === 'function' ? !!isDisabled(i) : !txt;
       btn.disabled = disabled;
       btn.setAttribute('aria-disabled', String(disabled));
       btn.classList.toggle('disabled', disabled);
-
-      // Hidden ONLY if no label.
       btn.classList.toggle('hidden', !txt);
     }
   }
@@ -89,13 +83,18 @@ export const UI = (() => {
   const $ = (id) => document.getElementById(id);
 
   function updateDisplayValues(data) {
-    if ('lives'       in data) $('lives-display')?.textContent = data.lives;
-    if ('roundsToWin' in data && 'roundsWon' in data) $('rounds-display')?.textContent = (data.roundsToWin - data.roundsWon);
-    if ('score'       in data) $('score-display')?.textContent = data.score;
-    if ('thread'      in data) $('thread-display')?.textContent = data.thread;
-    if ('roundScore'  in data) $('round-score')?.textContent = data.roundScore;
-    if ('roundNumber' in data) $('round-number-display')?.textContent = data.roundNumber;
-    if ('currentCategory' in data) $('category-hint')?.textContent = data.currentCategory || '[Faded Ink]';
+    const updateText = (id, value) => {
+      const el = $(id);
+      if (el) el.textContent = value;
+    };
+
+    if ('lives' in data) updateText('lives-display', data.lives);
+    if ('roundsToWin' in data && 'roundsWon' in data) updateText('rounds-display', data.roundsToWin - data.roundsWon);
+    if ('score' in data) updateText('score-display', data.score);
+    if ('thread' in data) updateText('thread-display', data.thread);
+    if ('roundScore' in data) updateText('round-score', data.roundScore);
+    if ('roundNumber' in data) updateText('round-number-display', data.roundNumber);
+    if ('currentCategory' in data) updateText('category-hint', data.currentCategory || '[Faded Ink]');
 
     if ('activeRoundEffects' in data && Array.isArray(data.activeRoundEffects)) {
       const titles = data.activeRoundEffects.map((e) => e.cardTitle).filter(Boolean);
@@ -104,17 +103,10 @@ export const UI = (() => {
     }
   }
 
-  // Flexible: works with (q, answers[]) OR legacy q.choices.{A,B,C}
   function showQuestion(q, answers) {
     const title = q?.title || q?.category || '';
     const text  = q?.text  || q?.prompt   || '';
-    const arr   = Array.isArray(answers)
-      ? answers
-      : [
-          { label: q?.choices?.A ?? '' },
-          { label: q?.choices?.B ?? '' },
-          { label: q?.choices?.C ?? '' },
-        ];
+    const arr   = Array.isArray(answers) ? answers : [{ label: q?.choices?.A ?? '' }, { label: q?.choices?.B ?? '' }, { label: q?.choices?.C ?? '' }];
 
     $('question-title')?.textContent = title;
     $('question-text') ?.textContent = text;
@@ -128,7 +120,6 @@ export const UI = (() => {
     $('fate-card-text') ?.textContent = card?.text  ?? '';
   }
 
-  // For on-screen text (controller labels come from ROUTES via setButtonLabels)
   function showFateChoicesFromState(state) {
     $('fate-a-text')?.textContent = state?.fateChoices?.[0]?.label ?? 'NOUS';
     $('fate-b-text')?.textContent = state?.fateChoices?.[1]?.label ?? 'NOUS';
@@ -136,29 +127,19 @@ export const UI = (() => {
   }
 
   function showResult(r) {
-    // Header: prefer kind; fallback to boolean 'correct'
-    let headerText = 'Incorrect';
-    if (r?.kind === 'WRONG') headerText = 'Wrong';
+    let headerText = 'Wrong';
     if (r?.kind === 'TYPICAL') headerText = 'Not Wrong';
     if (r?.kind === 'REVELATORY') headerText = 'Correct';
-    if (!r?.kind && typeof r?.correct === 'boolean') {
-      headerText = r.correct ? 'Correct' : 'Incorrect';
+    
+    let outcomeMessage = `Thread ${r.threadDelta >= 0 ? '+' : ''}${r.threadDelta}.`;
+    if (r.pointsGained > 0) {
+      outcomeMessage += ` Score +${r.pointsGained}.`;
     }
 
-    // Outcome message: use provided outcomeText if present; else compose from numbers
-    let outcomeMessage = '';
-    if (typeof r?.outcomeText === 'string' && r.outcomeText.trim()) {
-      outcomeMessage = r.outcomeText;
-    } else {
-      const pts = Number.isFinite(r?.pointsGained) ? r.pointsGained : 0;
-      const thd = Number.isFinite(r?.threadDelta)  ? r.threadDelta  : 0;
-      outcomeMessage = `+${pts} points, ${thd >= 0 ? '+' : ''}${thd} thread`;
-    }
-
-    $('result-header')         ?.textContent = headerText;
-    $('result-question')       ?.textContent = r?.questionText     ?? '';
-    $('result-chosen-answer')  ?.textContent = r?.chosenLabel      ?? '';
-    $('result-explanation')    ?.textContent = r?.explanation      ?? '';
+    $('result-header')        ?.textContent = headerText;
+    $('result-question')      ?.textContent = r?.questionText     ?? '';
+    $('result-chosen-answer') ?.textContent = r?.chosenLabel      ?? '';
+    $('result-explanation')   ?.textContent = r?.explanation  ?? '';
     $('result-outcome-message')?.textContent = outcomeMessage;
   }
 
@@ -186,29 +167,21 @@ export const UI = (() => {
     return pCount;
   };
   const showParticipantEntry = () => {
-    pCount = 1; if (flavor) flavor.hidden = true; updatePDisp(); updateScreen('waiting-room');
+    pCount = 1; if (flavor) flavor.hidden = true; updatePDisp(); updateScreen('WAITING_ROOM');
   };
 
   return {
-    /* router hooks */
     setButtonLabels,
     updateScreen,
     updateDisplayValues,
-
-    /* rendering helpers */
     showQuestion,
     showFateCard,
-    showFateChoices: (labels) => setButtonLabels(labels), // legacy usage; routes normally provide labels
     showFateChoicesFromState,
     showResult,
     showFailure,
     showFateResult,
-
-    /* welcome nav */
-    moveWelcomeSelection: (dir) => moveWelcomeSelection(dir),
+    moveWelcomeSelection,
     getWelcomeSelection,
-
-    /* participant dialog */
     showParticipantEntry,
     adjustParticipantCount,
     getParticipantCount: () => pCount,
