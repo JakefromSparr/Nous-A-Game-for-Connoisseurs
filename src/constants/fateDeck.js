@@ -1,6 +1,6 @@
 /**
  * @typedef {{ type: string, [k: string]: any }} FateEffect
- * @typedef {{ id: string, label: string, effect?: FateEffect }} FateOption
+ * @typedef {{ id: string, label: string, effect?: FateEffect | FateEffect[] }} FateOption
  * @typedef {{ id: string, title: string, text: string, choices: FateOption[] }} FateCard
  */
 
@@ -71,11 +71,10 @@ const fateDeck = [
       {
         id: "DYN005:0",
         label: "Accept Boon",
-        effect: {
-          type: "POWER_UP",
-          power: "REMOVE_WRONG_ANSWER",
-          flavorText: "You feel a quiet confidence. One of the wrong paths fades from view, leaving only certainty and a single doubt."
-        }
+        effect: [
+          { type: "ROUND_START", threadDelta: 1 },
+          { type: "POWER_UP", power: "REMOVE_WRONG_ANSWER" }
+        ]
       },
       {
         id: "DYN005:1",
