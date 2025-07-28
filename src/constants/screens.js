@@ -1,21 +1,24 @@
-
+// src/constants/screens.js
 export const SCREENS = Object.freeze({
-  WELCOME: 'welcome',
-  WAITING_ROOM: 'waiting-room',
-  RULES: 'rules',
-  OPTIONS: 'options',
-  GAME_LOBBY: 'game-lobby',
-  FATE: 'fate',
-  ROUND_LOBBY: 'round-lobby',
-  QUESTION: 'question',
-  QUESTION_RESULT: 'question-result',
-  THREAD_SEVERED: 'thread-severed',
-  FATE_RESULT: 'fate-result',
-  LAST_DECK: 'last-deck',
-  FINAL_QUESTION: 'final-question',
-  FINAL_RESULT: 'final-result',
-  FINAL_READING: 'final-reading',
-  GAME_OVER: 'game-over',
-  RESULTS: 'results',
-  CREDITS: 'credits'
+  WELCOME        : 'WELCOME',
+  WAITING_ROOM   : 'WAITING_ROOM',
+  RULES          : 'RULES',
+  OPTIONS        : 'OPTIONS',
+  GAME_LOBBY     : 'GAME_LOBBY',
+  ROUND_LOBBY    : 'ROUND_LOBBY',
+  QUESTION       : 'QUESTION',
+  REVEAL         : 'REVEAL',
+  FATE           : 'FATE',
+  FATE_RESULT    : 'FATE_RESULT',
+  THREAD_SEVERED : 'THREAD_SEVERED',
+  FINAL_READING  : 'FINAL_READING',
+  CREDITS        : 'CREDITS',
 });
+
+// If you want to keep experimental screens around, park them here for later:
+// export const FUTURE_SCREENS = Object.freeze({
+//   LAST_DECK:'LAST_DECK', FINAL_QUESTION:'FINAL_QUESTION', FINAL_RESULT:'FINAL_RESULT',
+//   GAME_OVER:'GAME_OVER', RESULTS:'RESULTS',
+// });
+
+export const ALL_SCREENS = Object.freeze(Object.values(SCREENS));
