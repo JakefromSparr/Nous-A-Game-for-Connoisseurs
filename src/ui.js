@@ -41,7 +41,7 @@ export const UI = (() => {
   const pretty = (name) => String(name || '').replace(/_/g, ' ').toLowerCase();
 
   function updateScreen(name) {
-    app?.classList.add('is-transitioning');
+    if (app) app.classList.add('is-transitioning');
 
     // next frame for smoother CSS transitions
     requestAnimationFrame(() => {
@@ -51,17 +51,20 @@ export const UI = (() => {
         s.setAttribute('aria-hidden', String(!active));
       });
 
-      app?.setAttribute('data-game-state', name);
-      controller?.setAttribute('data-controller-state', name);
+      if (app) app.setAttribute('data-game-state', name);
+      if (controller) controller.setAttribute('data-controller-state', name);
       if (agentLog) agentLog.textContent = `Last state: ${name}`;
       if (ariaStatus) ariaStatus.textContent = pretty(name);
 
-      if (name === 'WELCOME') updateWelcomeHighlight();
-      app?.classList.remove('is-transitioning');
+      if (String(name).toLowerCase() === 'welcome') updateWelcomeHighlight();
+      if (app) app.classList.remove('is-transitioning');
     });
   }
 
-  /* ───── Controller labels/disabled states ───── */
+  /* ───── Controller labels/disabled states ─────
+     - labels: array of 3 strings
+     - isDisabled: optional fn(index)->boolean for per-button disabled logic
+  */
   function setButtonLabels(labels = ['', '', ''], isDisabled) {
     for (let i = 0; i < 3; i++) {
       const btn = buttons[i];
@@ -71,10 +74,12 @@ export const UI = (() => {
       const txt = labels[i] ?? '';
       span.textContent = txt || ' ';
 
+      // A button is disabled if the isDisabled function says so, OR if it has no label.
       const disabled = typeof isDisabled === 'function' ? !!isDisabled(i) : !txt;
       btn.disabled = disabled;
       btn.setAttribute('aria-disabled', String(disabled));
       btn.classList.toggle('disabled', disabled);
+      // Hide only if no label at all (keeps layout stable when disabled)
       btn.classList.toggle('hidden', !txt);
     }
   }
@@ -103,48 +108,55 @@ export const UI = (() => {
     }
   }
 
+  // Flexible: works with (q,answers[]) OR legacy q.choices.{A,B,C}
   function showQuestion(q, answers) {
     const title = q?.title || q?.category || '';
     const text  = q?.text  || q?.prompt   || '';
-    const arr   = Array.isArray(answers) ? answers : [{ label: q?.choices?.A ?? '' }, { label: q?.choices?.B ?? '' }, { label: q?.choices?.C ?? '' }];
+    const arr   = Array.isArray(answers)
+      ? answers
+      : [
+          { label: q?.choices?.A ?? '' },
+          { label: q?.choices?.B ?? '' },
+          { label: q?.choices?.C ?? '' },
+        ];
 
-    $('question-title')?.textContent = title;
-    $('question-text') ?.textContent = text;
-    $('answer-a')      ?.textContent = arr[0]?.label ?? '';
-    $('answer-b')      ?.textContent = arr[1]?.label ?? '';
-    $('answer-c')      ?.textContent = arr[2]?.label ?? '';
+    const t1 = $('question-title'); if (t1) t1.textContent = title;
+    const t2 = $('question-text');  if (t2) t2.textContent = text;
+    const aA = $('answer-a');       if (aA) aA.textContent = arr[0]?.label ?? '';
+    const aB = $('answer-b');       if (aB) aB.textContent = arr[1]?.label ?? '';
+    const aC = $('answer-c');       if (aC) aC.textContent = arr[2]?.label ?? '';
   }
 
   function showFateCard(card) {
-    $('fate-card-title')?.textContent = card?.title ?? '';
-    $('fate-card-text') ?.textContent = card?.text  ?? '';
+    const f1 = $('fate-card-title'); if (f1) f1.textContent = card?.title ?? '';
+    const f2 = $('fate-card-text');  if (f2) f2.textContent = card?.text  ?? '';
   }
 
+  // For on-screen text (controller labels come from ROUTES via setButtonLabels)
   function showFateChoicesFromState(state) {
-    $('fate-a-text')?.textContent = state?.fateChoices?.[0]?.label ?? 'NOUS';
-    $('fate-b-text')?.textContent = state?.fateChoices?.[1]?.label ?? 'NOUS';
-    $('fate-c-text')?.textContent = state?.fateChoices?.[2]?.label ?? 'NOUS';
+    const eA = $('fate-a-text'); if (eA) eA.textContent = state?.fateChoices?.[0]?.label ?? 'NOUS';
+    const eB = $('fate-b-text'); if (eB) eB.textContent = state?.fateChoices?.[1]?.label ?? 'NOUS';
+    const eC = $('fate-c-text'); if (eC) eC.textContent = state?.fateChoices?.[2]?.label ?? 'NOUS';
   }
 
   function showResult(r) {
     let headerText = 'Wrong';
     if (r?.kind === 'TYPICAL') headerText = 'Not Wrong';
     if (r?.kind === 'REVELATORY') headerText = 'Correct';
-    
-    let outcomeMessage = `Thread ${r.threadDelta >= 0 ? '+' : ''}${r.threadDelta}.`;
-    if (r.pointsGained > 0) {
-      outcomeMessage += ` Score +${r.pointsGained}.`;
-    }
 
-    $('result-header')        ?.textContent = headerText;
-    $('result-question')      ?.textContent = r?.questionText     ?? '';
-    $('result-chosen-answer') ?.textContent = r?.chosenLabel      ?? '';
-    $('result-explanation')   ?.textContent = r?.explanation  ?? '';
-    $('result-outcome-message')?.textContent = outcomeMessage;
+    let outcomeMessage = `Thread ${r.threadDelta >= 0 ? '+' : ''}${r.threadDelta}.`;
+    if (r.pointsGained > 0) outcomeMessage += ` Score +${r.pointsGained}.`;
+
+    const h  = $('result-header');          if (h)  h.textContent  = headerText;
+    const q1 = $('result-question');        if (q1) q1.textContent = r?.questionText ?? '';
+    const a  = $('result-chosen-answer');   if (a)  a.textContent  = r?.chosenLabel  ?? '';
+    const ex = $('result-explanation');     if (ex) ex.textContent = r?.explanation  ?? '';
+    const om = $('result-outcome-message'); if (om) om.textContent = outcomeMessage;
   }
 
   function showFailure(ptsLost) {
-    $('lost-points-display')?.textContent = ptsLost ?? 0;
+    const el = $('lost-points-display');
+    if (el) el.textContent = ptsLost ?? 0;
   }
 
   function showFateResult(text) {
@@ -171,17 +183,24 @@ export const UI = (() => {
   };
 
   return {
+    /* router hooks */
     setButtonLabels,
     updateScreen,
     updateDisplayValues,
+
+    /* rendering helpers */
     showQuestion,
     showFateCard,
     showFateChoicesFromState,
     showResult,
     showFailure,
     showFateResult,
+
+    /* welcome nav */
     moveWelcomeSelection,
     getWelcomeSelection,
+
+    /* participant dialog */
     showParticipantEntry,
     adjustParticipantCount,
     getParticipantCount: () => pCount,
