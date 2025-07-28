@@ -6,7 +6,7 @@ import { UI }      from './ui.js';
 
 import * as Q     from './engine/questionEngine.js';
 import * as Fate  from './engine/fateEngine.js';
-import * as Round from './engine/roundEngine.js'; // rename file if you still have lastEngine.js
+import * as Round from './engine/roundEngine.js';
 
 /* ---------------- Internal helpers ---------------- */
 
@@ -26,6 +26,7 @@ function applyResult({ patch, next } = {}) {
   const st  = State.getState();
   const labels = cfg.labels.map(l => (typeof l === 'function' ? l(st) : l));
 
+  // NOTE: UI.setButtonLabels must accept (labels, isDisabledFn)
   UI.setButtonLabels(labels, (i) => {
     // Base rule: null action means disabled (taunt)
     if (cfg.actions[i] === null) return true;
@@ -50,6 +51,11 @@ function doPull() {
 
   const afterPull = s.thread - 1;
   const { question, answers, category } = Q.drawQuestion(s);
+
+  // If deck/tier exhausted, stay in Round Lobby (don’t show an empty Question screen)
+  if (!question) {
+    return { patch: { thread: afterPull }, next: SCREENS.ROUND_LOBBY };
+  }
 
   return {
     patch: {
@@ -112,8 +118,7 @@ const ACTIONS = {
     return { patch, next: SCREENS.FATE };
   },
   'to-round-lobby' : () => {
-    // If you also keep State.startNewRound(), call it; Round.startRound returns patch regardless
-    State.startNewRound?.();
+    State.startNewRound?.(); // harmless if no-op
     const patch = Round.startRound(State.getState());
     return { patch, next: SCREENS.ROUND_LOBBY };
   },
@@ -133,7 +138,7 @@ const ACTIONS = {
 
   /* QUESTION (answers 0/1/2) */
   'choose-0': () => {
-    const res = Q.evaluate(0, State.getState()); // applies typical/revelatory/wrong deltas; clears weavePrimed if used
+    const res = Q.evaluate(0, State.getState());
     return { patch: res?.patch, next: SCREENS.REVEAL };
   },
   'choose-1': () => {
@@ -146,7 +151,7 @@ const ACTIONS = {
   },
 
   /* REVEAL */
-  'reveal-fight'  : () => afterRevealAccept(),  // identical for now; can diverge later
+  'reveal-fight'  : () => afterRevealAccept(),  // placeholder
   'reveal-accept' : () => afterRevealAccept(),
 
   /* FATE (1–3 options; empty slots disabled in UI, but we also guard here) */
@@ -173,10 +178,32 @@ const ACTIONS = {
   },
 
   /* FATE RESULT */
-  'fate-fight'  : () => ({ next: SCREENS.ROUND_LOBBY }), // taunt placeholder; wire later if needed
+  'fate-fight'  : () => ({ next: SCREENS.ROUND_LOBBY }), // taunt placeholder
   'fate-accept' : () => {
-    const patch = Round.finalizeRound(State.getState()); // adds pendingBank to score, inc roundsWon if roundWon, adv roundNumber, compute nextRoundT0
-    return { patch, next: SCREENS.GAME_LOBBY };
+    const s = State.getState();
+
+    // 1) Apply fate math to pending bank + global score (pre-finalization)
+    const res = Fate.resolveRound(s.roundAnswerTally, s.roundWon);
+    const newBank = Math.max(
+      0,
+      Math.floor(((s.pendingBank || 0) + (res?.roundScoreDelta || 0)) * (res?.roundScoreMultiplier || 1))
+    );
+    const patchFromFate = {
+      pendingBank: newBank,
+      score: (s.score || 0) + (res?.scoreDelta || 0),
+    };
+    State.patch(patchFromFate);
+
+    // 2) Finalize the round (add bank to score, bump counters, clear round scratch)
+    const patch = Round.finalizeRound(State.getState());
+
+    // 3) Decide next screen now (before applyResult patches it in)
+    const roundsWonNext = (s.roundsWon || 0) + (s.roundWon ? 1 : 0);
+    const next = roundsWonNext >= (s.roundsToWin || 3)
+      ? SCREENS.FINAL_READING
+      : SCREENS.GAME_LOBBY;
+
+    return { patch, next };
   },
 
   /* THREAD SEVERED */
@@ -222,9 +249,8 @@ export function handleAction(btnIndex) {
   const res = fn() || {};
   applyResult(res);
 }
-// at bottom of src/handleAction.js
+
+// Re-evaluate labels/disabled with current state
 export function refreshUI() { 
-  // re-evaluate labels/disabled with current state
   applyResult({});
 }
-
