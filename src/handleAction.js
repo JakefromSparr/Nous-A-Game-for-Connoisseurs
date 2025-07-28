@@ -26,7 +26,7 @@ function applyResult({ patch, next } = {}) {
   const st  = State.getState();
   const labels = cfg.labels.map(l => (typeof l === 'function' ? l(st) : l));
 
-  // NOTE: UI.setButtonLabels must accept (labels, isDisabledFn)
+  // NOTE: UI.setButtonLabels should accept (labels, isDisabledFn)
   UI.setButtonLabels(labels, (i) => {
     // Base rule: null action means disabled (taunt)
     if (cfg.actions[i] === null) return true;
@@ -41,7 +41,36 @@ function applyResult({ patch, next } = {}) {
   });
 
   UI.updateDisplayValues(st);
+  renderScreenBody(target, st);   // ensure screen body is populated (Question/Reveal/Fate)
+
   State.saveGame?.();
+}
+
+// Normalize state → UI renderers
+function renderScreenBody(target, st) {
+  if (target === SCREENS.QUESTION && st.currentQuestion) {
+    const q = st.currentQuestion;
+    const choices = {
+      A: st.currentAnswers?.find(a => a.key === 'A')?.label || '',
+      B: st.currentAnswers?.find(a => a.key === 'B')?.label || '',
+      C: st.currentAnswers?.find(a => a.key === 'C')?.label || '',
+    };
+    UI.showQuestion({ title: q.title || '', text: q.text || '', choices });
+  }
+  if (target === SCREENS.FATE && st.activeFateCard) {
+    UI.showFateCard(st.activeFateCard);
+  }
+  if (target === SCREENS.REVEAL && st.lastOutcome) {
+    const r = st.lastOutcome;
+    const outcomeText = `+${r.pointsGained || 0} points, ${r.threadDelta >= 0 ? '+' : ''}${r.threadDelta || 0} thread`;
+    UI.showResult({
+      correct: r.kind !== 'WRONG',
+      question: r.questionText || '',
+      answer: r.chosenLabel || '',
+      explanation: r.explanation || '',
+      outcomeText,
+    });
+  }
 }
 
 // Pull baseline cost (−1 thread) then draw a question
@@ -72,7 +101,7 @@ function doPull() {
 function afterRevealAccept() {
   const s = State.getState();
   if (s.thread <= 0) {
-    const patch = Round.sever(s);                 // sets roundEndedBy, pendingBank=0, lives-1
+    const patch = Round.sever(s);                 // sets roundEndedBy, pendingBank=0, lives-1, thread:0
     return { patch, next: SCREENS.THREAD_SEVERED };
   }
   if (s.pendingFateCard) {
@@ -118,8 +147,7 @@ const ACTIONS = {
     return { patch, next: SCREENS.FATE };
   },
   'to-round-lobby' : () => {
-    State.startNewRound?.(); // harmless if no-op
-    const patch = Round.startRound(State.getState());
+    const patch = Round.startRound(State.getState()); // engine is source of truth
     return { patch, next: SCREENS.ROUND_LOBBY };
   },
   'back-to-welcome': () => ({ next: SCREENS.WELCOME }),
@@ -130,9 +158,8 @@ const ACTIONS = {
     return { patch, next: SCREENS.FATE_RESULT };
   },
   'weave'   : () => {
-    const s = State.getState();
-    if (s.thread <= 0 || s.weavePrimed) return {};
-    return { patch: { thread: s.thread - 1, weavePrimed: true } };
+    State.spendThreadToWeave(); // centralize weave logic
+    return {};
   },
   'pull'    : () => doPull(),
 
@@ -160,44 +187,32 @@ const ACTIONS = {
     const choice = s.fateChoices[0];
     if (!choice) return {};
     const patch = Fate.applyChoice(choice, s);
-    return { patch, next: SCREENS.FATE_RESULT };
+    return { patch, next: SCREENS.GAME_LOBBY };
   },
   'fate-choose-1' : () => {
     const s = State.getState();
     const choice = s.fateChoices[1];
     if (!choice) return {};
     const patch = Fate.applyChoice(choice, s);
-    return { patch, next: SCREENS.FATE_RESULT };
+    return { patch, next: SCREENS.GAME_LOBBY };
   },
   'fate-choose-2' : () => {
     const s = State.getState();
     const choice = s.fateChoices[2];
     if (!choice) return {};
     const patch = Fate.applyChoice(choice, s);
-    return { patch, next: SCREENS.FATE_RESULT };
+    return { patch, next: SCREENS.GAME_LOBBY };
   },
 
   /* FATE RESULT */
   'fate-fight'  : () => ({ next: SCREENS.ROUND_LOBBY }), // taunt placeholder
   'fate-accept' : () => {
     const s = State.getState();
+    // Apply Fate math, then finalize round atomically in the engine
+    const fateRes = Fate.resolveRound(s.roundAnswerTally, s.roundWon);
+    const patch = Round.finalizeRound(s, fateRes);
 
-    // 1) Apply fate math to pending bank + global score (pre-finalization)
-    const res = Fate.resolveRound(s.roundAnswerTally, s.roundWon);
-    const newBank = Math.max(
-      0,
-      Math.floor(((s.pendingBank || 0) + (res?.roundScoreDelta || 0)) * (res?.roundScoreMultiplier || 1))
-    );
-    const patchFromFate = {
-      pendingBank: newBank,
-      score: (s.score || 0) + (res?.scoreDelta || 0),
-    };
-    State.patch(patchFromFate);
-
-    // 2) Finalize the round (add bank to score, bump counters, clear round scratch)
-    const patch = Round.finalizeRound(State.getState());
-
-    // 3) Decide next screen now (before applyResult patches it in)
+    // Decide next: if the round you just finalized got you to the threshold, go to Final Reading
     const roundsWonNext = (s.roundsWon || 0) + (s.roundWon ? 1 : 0);
     const next = roundsWonNext >= (s.roundsToWin || 3)
       ? SCREENS.FINAL_READING
