@@ -1,120 +1,115 @@
 // src/constants/routes.js
 import { SCREENS } from './screens.js';
-import { State }   from '../state.js';           // <-- for dynamic labels
 
-/* Helper: blank-out a button that isn’t meant to do anything */
-const DISABLED = () => '';
+// Canonical: exactly 3 labels and 3 actions per screen.
+// labels[i] may be a string or (state)=>string
+// actions[i] is a string or null (null => disabled taunt)
 
-/**
- * ROUTES describes, per screen:
- *   — btnMap  : { 1: actionName, 2: actionName, 3: actionName }
- *   — labels  : [labelBtn1, labelBtn2, labelBtn3]
- *     A label can be:
- *       • a string (static), or
- *       • a () => string  (dynamic – evaluated each time the screen shows)
- */
 export const ROUTES = {
-  /* ─────────────── ENTRY FLOW ─────────────── */
+  // ───────────── ENTRY ─────────────
   [SCREENS.WELCOME]: {
-    btnMap : { 1:'welcome-down', 2:'welcome-select', 3:'welcome-up' },
-    labels : ['Down','Select','Up']
+    labels: ['Down','Select','Up'],
+    actions: ['welcome-down','welcome-select','welcome-up'],
   },
 
   [SCREENS.WAITING_ROOM]: {
-    btnMap : { 1:'participants-down', 2:'participants-confirm', 3:'participants-up' },
-    labels : ['Less','Confirm','More']
+    labels: ['Less','Confirm','More'],
+    actions: ['participants-down','participants-confirm','participants-up'],
   },
 
   [SCREENS.RULES]: {
-    btnMap : { 1:'back-to-welcome', 2:'no-op',          3:'go-options'   },
-    labels : ['I’ve Heard Enough','NOUS','Tell Me More']
+    labels: ['I’ve Heard Enough','NOUS','Tell Me More'],
+    actions: ['back-to-welcome', null, 'rules-more'], // Plead-style taunt in middle
   },
 
   [SCREENS.OPTIONS]: {
-    btnMap : { 1:'options-down',   2:'option-select',  3:'options-up'   },
-    labels : ['Down','Select','Up']
+    labels: ['Down','Select','Up'],
+    actions: ['options-down','options-select','options-up'],
   },
 
-  /* ─────────────── CORE LOBBY ─────────────── */
+  // ───────────── MAIN LOBBY ─────────────
   [SCREENS.GAME_LOBBY]: {
-    btnMap : { 1:'turn-back',      2:'tempt-fate',     3:'next-round'   },
-    labels : ['Turn Back','Tempt Fate','Push On']
+    labels: [
+      () => 'Turn Back',
+      s => (s.pendingFateCard ? 'Tempt Fate' : 'NOUS'),
+      () => 'Push On',
+    ],
+    actions: ['back-to-welcome','enter-fate','to-round-lobby'], // UI will disable center when NOUS
   },
 
-  /* ─────────────── FATE CARD ─────────────── */
-  [SCREENS.FATE]: {
-    btnMap : { 1:'fate-a',         2:'fate-b',         3:'fate-c'       },
-    labels : [
-      () => State.getState().currentFateCard?.choices?.[0]?.label ?? '—',
-      () => State.getState().currentFateCard?.choices?.[1]?.label ?? 'NOUS',
-      () => State.getState().currentFateCard?.choices?.[2]?.label ?? 'NOUS'
-    ]
-  },
-
-  /* ─────────────── ROUND LOBBY ─────────────── */
+  // ───────────── ROUND LOBBY ─────────────
   [SCREENS.ROUND_LOBBY]: {
-    btnMap : { 1:'end-round',      2:'double-points',  3:'start-question' },
-    labels : ['Cut the Thread','Weave to Fate','Pull the Thread']
+    labels: ['Tie Off Thread','Weave the Thread','Pull the Thread'],
+    actions: ['tie-off','weave','pull'],
   },
 
-  /* ─────────────── ACTIVE QUESTION ─────────────── */
+  // ───────────── QUESTION ─────────────
   [SCREENS.QUESTION]: {
-    btnMap : { 1:'answer-a',       2:'answer-b',       3:'answer-c'    },
-    labels : ['Choose A','Choose B','Choose C']
+    labels: [
+      s => s.currentAnswers?.[0]?.label ?? 'A',
+      s => s.currentAnswers?.[1]?.label ?? 'B',
+      s => s.currentAnswers?.[2]?.label ?? 'C',
+    ],
+    actions: ['choose-0','choose-1','choose-2'],
   },
 
-  /* ─────────────── QUESTION RESULT ─────────────── */
-  [SCREENS.QUESTION_RESULT]: {
-    btnMap : { 1:'challenge-result', 2:'plead-result', 3:'accept-result' },
-    labels : ['Fight Fate','Plead Case','Accept Fate']
+  // ───────────── REVEAL ─────────────
+  [SCREENS.REVEAL]: {
+    labels: ['Fight Fate','Plead Case','Accept Fate'],
+    actions: ['reveal-fight', null, 'reveal-accept'], // Plead is a taunt
   },
 
-  /* ─────────────── THREAD SEVERED ─────────────── */
-  [SCREENS.THREAD_SEVERED]: {
-    btnMap : { 1:'no-op',          2:'no-op',          3:'no-op'       },
-    labels : ['NOUS','NO USE','NOUS']
+  // ───────────── FATE (1–3 options; holes = NOUS) ─────────────
+  [SCREENS.FATE]: {
+    labels: [
+      s => s.fateChoices?.[0]?.label ?? 'NOUS',
+      s => s.fateChoices?.[1]?.label ?? 'NOUS',
+      s => s.fateChoices?.[2]?.label ?? 'NOUS',
+    ],
+    actions: ['fate-choose-0','fate-choose-1','fate-choose-2'], // UI disables where choice==null
   },
 
-  /* ─────────────── FATE RESULT ─────────────── */
+  // ───────────── FATE RESULT ─────────────
   [SCREENS.FATE_RESULT]: {
-    btnMap : { 1:'challenge-result', 2:'plead-result', 3:'accept-result' },
-    labels : ['Fight Fate','Plead Case','Accept Fate']
+    labels: ['Fight Fate','Plead Case','Accept Fate'],
+    actions: ['fate-fight', null, 'fate-accept'], // Plead is a taunt
   },
 
-  /* ─────────────── FINAL ARC ─────────────── */
-  [SCREENS.LAST_DECK]: {
-    btnMap : { 1:'turn-back',      2:'tempt-fate',     3:'next-round'  }, // tweak if different
-    labels : ['Turn Back','Tempt Fate','Push On']
+  // ───────────── THREAD SEVERED ─────────────
+  [SCREENS.THREAD_SEVERED]: {
+    labels: ['NOUS','NO USE','NOUS'],
+    actions: [null, 'sever-ack', null], // only center does something
   },
 
-  [SCREENS.FINAL_QUESTION]: {
-    btnMap : { 1:'answer-a',       2:'answer-b',       3:'answer-c'    },
-    labels : ['Choose A','Choose B','Choose C']
-  },
-
-  [SCREENS.FINAL_RESULT]: {
-    btnMap : { 1:'challenge-result', 2:'plead-result', 3:'accept-result' },
-    labels : ['Fight Fate','Plead Case','Accept Fate']
-  },
-
+  // ───────────── FINAL READING / CREDITS ─────────────
   [SCREENS.FINAL_READING]: {
-    btnMap : { 1:'save-reading',   2:'restart-game',   3:'quit-game'   },
-    labels : ['Save Reading','Again!','Quit']
-  },
-
-  /* ─────────────── END GAME / META ─────────────── */
-  [SCREENS.GAME_OVER]: {
-    btnMap : { 1:'restart-game',   2:'no-op',          3:'quit-game'   },
-    labels : ['Try Again','NOUS','Exit']
-  },
-
-  [SCREENS.RESULTS]: {
-    btnMap : { 1:'restart-game',   2:'save-reading',   3:'quit-game'   },
-    labels : ['Play Again','Save Reading','Quit']
+    labels: [
+      s => s.readingButtons?.[0] ?? 'A',
+      s => s.readingButtons?.[1] ?? 'B',
+      s => s.readingButtons?.[2] ?? 'C',
+    ],
+    actions: ['reading-a','reading-b','reading-c'],
   },
 
   [SCREENS.CREDITS]: {
-    btnMap : { 1:'back-to-welcome', 2:'no-op',          3:'no-op'       },
-    labels : ['Main Menu',DISABLED,DISABLED]
-  }
+    labels: ['Main Menu','NOUS','NOUS'],
+    actions: ['back-to-welcome', null, null],
+  },
 };
+
+// Guard: enforce 3 labels/actions & types
+export function guardRoutes(routes) {
+  for (const [screen, cfg] of Object.entries(routes)) {
+    if (!cfg?.labels || cfg.labels.length !== 3) throw new Error(`Route ${screen}: needs 3 labels`);
+    if (!cfg?.actions || cfg.actions.length !== 3) throw new Error(`Route ${screen}: needs 3 actions`);
+    cfg.labels.forEach((l,i) => {
+      const ok = typeof l === 'string' || typeof l === 'function';
+      if (!ok) throw new Error(`Route ${screen}[${i}] label must be string or fn(state)`);
+    });
+    cfg.actions.forEach((a,i) => {
+      if (a !== null && typeof a !== 'string') {
+        throw new Error(`Route ${screen}[${i}] action must be string or null`);
+      }
+    });
+  }
+}
