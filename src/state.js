@@ -2,28 +2,80 @@
 import { SCREENS } from './constants/screens.js';
 import { validateOnLoad, sanitizeBeforeSave } from './validator.js';
 
-/* ─────────── initial store ─────────── */
-let gameState = {
-  currentScreen : SCREENS.WELCOME,
-  lives         : 0,
-  roundsToWin   : 3,
-  score         : 0,
-  roundScore    : 0,
-  roundNumber   : 1,
-  traits        : { X:0, Y:0, Z:0 },
-  fateCardDeck  : [],
-  questionDeck  : []
+// ===== Defaults & helpers =====
+export const DEFAULTS = {
+  baseT0: 4,           // starting thread length per round
+  roundsToWin: 3,
+  threadCapBase: 5,    // cap = 5 + floor(audacity/2) (used in roundEngine, not here)
 };
 
-/* ─────────── CRUD helpers ─────────── */
-const patch    = (partial={}) => Object.assign(gameState, partial);
-const getState = ()            => gameState;
+const emptyTally = () => ({ A: 0, B: 0, C: 0 });
+
+// ===== Canonical initial state =====
+let gameState = {
+  schemaVersion: 1,
+  currentScreen: SCREENS.WELCOME,
+
+  // Meta / progression
+  lives: 0,                           // set via initializeGame(participants)
+  score: 0,                           // global score (updated at Fate Result)
+  roundsToWin: DEFAULTS.roundsToWin,
+  roundsWon: 0,
+  roundNumber: 1,
+
+  // Round runtime
+  roundScore: 0,
+  notWrongCount: 0,
+  thread: 0,                          // set when a round starts
+  nextRoundT0: DEFAULTS.baseT0,       // carry-over seed for next startRound
+  weavePrimed: false,
+  pendingBank: 0,                     // what will be added to score at Fate Result
+
+  // Difficulty / gating
+  audacity: 0,
+  difficultyLevel: 1,
+  correctAnswersThisDifficulty: 0,
+
+  // Decks / IDs
+  fateCardDeck: [],
+  questionDeck: [],
+  answeredQuestionIds: new Set(),     // persist as arrays
+  completedFateCardIds: new Set(),
+
+  // Fate state
+  activeRoundEffects: [],
+  activePowerUps: [],
+  currentFateCard: null,
+  pendingFateCard: null,              // set by Q / reveal
+  activeFateCard: null,
+  fateChoices: [null, null, null],    // each: { id, label, ... } | null
+
+  // Question state
+  currentQuestion: null,
+  currentAnswers: [],                 // [{key:'A'|'B'|'C', label:string}]
+  currentCategory: '',
+  roundAnswerTally: emptyTally(),
+
+  // Traits
+  traits: { X: 0, Y: 0, Z: 0 },
+
+  // Round summary bookkeeping
+  roundEndedBy: null,                 // 'TIE_OFF' | 'SEVER' | null
+  roundWon: false,                    // computed at end
+};
+
+// ===== CRUD helpers =====
+const patch = (partial = {}) => Object.assign(gameState, partial);
+const getState = () => gameState;
+
+// ===== Persistence =====
+const SAVE_KEY = 'nous-save';
 
 const saveGame = () => {
   try {
     const { ok, data, errors } = sanitizeBeforeSave(gameState);
     if (!ok) console.warn('[SAVE] state normalized with warnings', errors);
-    localStorage.setItem('nous-save', JSON.stringify(data));
+    localStorage.setItem(SAVE_KEY, JSON.stringify(data));
     return true;
   } catch (e) {
     console.error('[SAVE]', e);
@@ -33,9 +85,9 @@ const saveGame = () => {
 
 const loadGame = () => {
   try {
-    const raw = JSON.parse(localStorage.getItem('nous-save') || 'null');
+    const raw = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
     if (!raw) return false;
-    const res = validateOnLoad(raw);
+    const res = validateOnLoad(raw);  // transforms arrays -> Sets, checks invariants
     if (!res.ok) return false;
     gameState = { ...gameState, ...res.data };
     return true;
@@ -44,61 +96,119 @@ const loadGame = () => {
   }
 };
 
-/* ─────────── deck loader ─────────── */
-async function loadData () {
-  /*  fate = JS module, questions = pure JSON  */
-  const [{ default: fateDeck }, { default: questions }] = await Promise.all([
+// ===== Deck loader =====
+// Prefer JS modules for both decks (avoids import-attributes footguns).
+async function loadData() {
+  const [{ default: fateDeck }, { default: questionDeck }] = await Promise.all([
     import('./constants/fateDeck.js'),
-    import('./constants/questionDeck.json', { with:{ type:'json' } })
+    import('./constants/questionDeck.js'), // If you actually use .json, change to: import('./constants/questionDeck.json')
   ]);
 
-  /* normalise questions array (in case it’s wrapped) */
-  const qDeck = Array.isArray(questions.questions) ? questions.questions : questions;
-
   patch({
-    fateCardDeck : [...fateDeck],
-    questionDeck : [...qDeck]
+    fateCardDeck: Array.isArray(fateDeck) ? [...fateDeck] : [],
+    questionDeck: Array.isArray(questionDeck?.questions) ? [...questionDeck.questions]
+                  : Array.isArray(questionDeck) ? [...questionDeck]
+                  : [],
   });
 }
 
-/* ─────────── game init ─────────── */
-function initializeGame (participants=1){
+// ===== Lifecycle =====
+function initializeGame(participants = 1) {
   patch({
-    currentScreen : SCREENS.WAITING_ROOM,
-    lives         : participants + 1,
-    score         : 0,
-    roundsWon     : 0,
-    roundNumber   : 1,
-    roundScore    : 0,
-    thread        : 4,
-    audacity      : 0,
-    difficultyLevel            : 1,
+    currentScreen: SCREENS.WAITING_ROOM,
+
+    // game meta
+    lives: Math.max(1, Number(participants) || 1) + 1, // “Strange, I’m seeing N+1…”
+    score: 0,
+    roundsWon: 0,
+    roundNumber: 1,
+
+    // round seed (actual thread set on startNewRound)
+    roundScore: 0,
+    notWrongCount: 0,
+    thread: 0,
+    nextRoundT0: DEFAULTS.baseT0,
+    weavePrimed: false,
+    pendingBank: 0,
+
+    // gating
+    audacity: 0,
+    difficultyLevel: 1,
     correctAnswersThisDifficulty: 0,
-    answeredQuestionIds : new Set(),
+
+    // IDs / decks bookkeeping
+    answeredQuestionIds: new Set(),
     completedFateCardIds: new Set(),
-    activeRoundEffects  : [],
-    currentFateCard     : null,
-    pendingFateCard     : null,
-    activeFateCard      : null,
-    currentQuestion     : null,
-    currentAnswers      : [],
-    notWrongCount       : 0,
-    currentCategory     : 'Mind, Past',
-    roundAnswerTally    : { A:0, B:0, C:0 },
-    traits              : { X:0, Y:0, Z:0 },
-    activePowerUps      : [],
-    answeredThisRound   : [],
+
+    // fate/question state
+    activeRoundEffects: [],
+    activePowerUps: [],
+    currentFateCard: null,
+    pendingFateCard: null,
+    activeFateCard: null,
+    fateChoices: [null, null, null],
+
+    currentQuestion: null,
+    currentAnswers: [],
+    currentCategory: '',
+    roundAnswerTally: emptyTally(),
+
+    // traits
+    traits: { X: 0, Y: 0, Z: 0 },
+
+    // summary
+    roundEndedBy: null,
+    roundWon: false,
   });
 }
 
-/* ─────────── public API ─────────── */
-export const State = {
-  /* data */
-  patch, getState,
+// Start a round (called when entering ROUND_LOBBY)
+function startNewRound() {
+  const t0 = typeof gameState.nextRoundT0 === 'number' ? gameState.nextRoundT0 : DEFAULTS.baseT0;
 
-  /* lifecycle */
-  loadData, initializeGame,
-  saveGame, loadGame
+  patch({
+    roundScore: 0,
+    notWrongCount: 0,
+    thread: t0,
+    weavePrimed: false,
+
+    currentQuestion: null,
+    currentAnswers: [],
+    currentCategory: '',
+
+    pendingFateCard: null,
+    activeFateCard: null,
+    fateChoices: [null, null, null],
+
+    roundEndedBy: null,
+    roundWon: false,
+  });
+}
+
+// Spend 1 thread in Round Lobby to prime double points for the next question
+function spendThreadToWeave() {
+  if (gameState.thread <= 0 || gameState.weavePrimed) return false;
+  patch({ thread: gameState.thread - 1, weavePrimed: true });
+  return true;
+}
+
+// ===== Public API =====
+export const State = {
+  // data
+  patch,
+  getState,
+
+  // lifecycle
+  loadData,
+  initializeGame,
+  startNewRound,
+
+  // persistence
+  saveGame,
+  loadGame,
+
+  // actions that mutate state (used by router/engines)
+  spendThreadToWeave,
 };
 
-if (typeof window!=='undefined') window.State = State;
+if (typeof window !== 'undefined') window.State = State;
