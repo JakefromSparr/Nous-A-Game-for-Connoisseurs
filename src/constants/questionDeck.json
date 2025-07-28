@@ -1,4 +1,4 @@
-{
+export default {
   "questions": [
     {
       "questionId": 101,
