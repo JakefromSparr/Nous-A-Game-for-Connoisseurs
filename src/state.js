@@ -97,21 +97,17 @@ const loadGame = () => {
 };
 
 // ===== Deck loader =====
-// Prefer JS modules for both decks (avoids import-attributes footguns).
 async function loadData() {
   const [{ default: fateDeck }, { default: questionDeck }] = await Promise.all([
     import('./constants/fateDeck.js'),
-    import('./constants/questionDeck.js'), // If you actually use .json, change to: import('./constants/questionDeck.json')
+    import('./constants/questionDeck.js'),
   ]);
 
   patch({
     fateCardDeck: Array.isArray(fateDeck) ? [...fateDeck] : [],
-    questionDeck: Array.isArray(questionDeck?.questions) ? [...questionDeck.questions]
-                  : Array.isArray(questionDeck) ? [...questionDeck]
-                  : [],
+    questionDeck: Array.isArray(questionDeck) ? [...questionDeck] : [],
   });
 }
-
 // ===== Lifecycle =====
 function initializeGame(participants = 1) {
   patch({
