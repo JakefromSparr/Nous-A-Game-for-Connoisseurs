@@ -2,3 +2,4 @@
 - Renamed src/engine/utils to utils.js and updated imports
 - Added schema validation for loading and saving game state
 - Added devSuite folder with Node, Vite, Zod, and Jest tooling
+- Synced UI to new screen blueprint; controller now 0-indexed and Credits added

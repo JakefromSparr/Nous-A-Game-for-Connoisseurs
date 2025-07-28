@@ -15,10 +15,10 @@
 <body>
 
     <!-- Main container for all game screens. Tracks the current state. -->
-    <main id="app-container" data-game-state="welcome">
+    <main id="app-container" data-game-state="WELCOME">
 
         <!-- 1. Welcome Screen (Visible by default) -->
-        <section id="screen-welcome" class="game-screen is-active" data-screen="welcome">
+        <section id="screen-welcome" class="game-screen is-active" data-screen="WELCOME">
             <h1>NOUS</h1>
             <h2 class="subtitle">A GAME FOR CONNOISSEURS</h2>
             <p>Will what you know save you from what you don’t?</p>
@@ -29,15 +29,10 @@
                 <li><span></span> Options</li>
             </ul>
 
-            <div id="participant-entry" hidden>
-              <p>How many will be participating in tonight’s experience?</p>
-              <input type="number" id="participant-count" min="1" max="20" value="1" />
-              <button id="confirm-participants">Confirm</button>
-            </div>
         </section>
 
         <!-- 1b. Waiting Room Screen -->
-        <section id="screen-waiting-room" class="game-screen" data-screen="waiting-room">
+        <section id="screen-waiting-room" class="game-screen" data-screen="WAITING_ROOM">
   <h2>Waiting Room</h2>
             <p>How many will be participating tonight?</p>
             <p id="participant-count-display">1</p>
@@ -45,13 +40,13 @@
         </section>
 
         <!-- 2. Rules Screen -->
-        <section id="screen-rules" class="game-screen" data-screen="rules">
+        <section id="screen-rules" class="game-screen" data-screen="RULES">
             <h2>Rules</h2>
             <p>Answer questions to gather Thread. Don't let your Thread run out. Some choices have... consequences.</p>
         </section>
 
         <!-- 3. Options Screen -->
-        <section id="screen-options" class="game-screen" data-screen="options">
+        <section id="screen-options" class="game-screen" data-screen="OPTIONS">
             <h2>Options</h2>
             <label for="difficulty-select">Difficulty:</label>
             <select id="difficulty-select">
@@ -62,7 +57,7 @@
         </section>
 
         <!-- 4. Game Lobby Screen -->
-        <section id="screen-game-lobby" class="game-screen" data-screen="game-lobby">
+        <section id="screen-game-lobby" class="game-screen" data-screen="GAME_LOBBY">
             <h2>Game Lobby</h2>
             <div class="lobby-display">
                 <p>Lives Remaining: <span id="lives-display">[#]</span></p>
@@ -79,7 +74,7 @@
         </section>
 
         <!-- 5. Round Lobby Screen -->
-        <section id="screen-round-lobby" class="game-screen" data-screen="round-lobby">
+        <section id="screen-round-lobby" class="game-screen" data-screen="ROUND_LOBBY">
             <h2>Round <span id="round-number-display">[#]</span></h2>
             <div class="round-display">
                 <p>Active Divinations: <span id="active-divinations">[None]</span></p>
@@ -90,7 +85,7 @@
         </section>
 
         <!-- 6. Active Question Screen -->
-        <section id="screen-question" class="game-screen" data-screen="question">
+        <section id="screen-question" class="game-screen" data-screen="QUESTION">
             <h2 id="question-title">[Question Title/Category]</h2>
             <p id="question-text">[The trivia question text will be dynamically inserted here.]</p>
             <div class="answer-options">
@@ -101,7 +96,7 @@
         </section>
 
         <!-- 6b. Fate Card Screen -->
-        <section id="screen-fate-card" class="game-screen" data-screen="fate-card">
+        <section id="screen-fate" class="game-screen" data-screen="FATE">
             <h2 id="fate-card-title">[Fate Title]</h2>
             <p id="fate-card-text">[The whisper of destiny will appear here.]</p>
             <div class="answer-options">
@@ -112,7 +107,7 @@
         </section>
 
         <!-- 7. Result Screen -->
-        <section id="screen-result" class="game-screen" data-screen="result">
+        <section id="screen-reveal" class="game-screen" data-screen="REVEAL">
             <h2 id="result-header">[Correct / Incorrect]</h2>
             <div class="result-details">
                 <p><strong>Question:</strong> <span id="result-question">[Question]</span></p>
@@ -125,20 +120,20 @@
         </section>
 
         <!-- 8. Failure Screen -->
-        <section id="screen-failure" class="game-screen" data-screen="failure">
+        <section id="screen-thread-severed" class="game-screen" data-screen="THREAD_SEVERED">
             <h2>Thread Severed</h2>
             <p>Points Lost This Round: <span id="lost-points-display">[#]</span></p>
             <p>The exit was just ‘round that corner… Next time maybe.</p>
         </section>
         
         <!-- 9. Final Reading Screen (Placeholder) -->
-        <section id="screen-final-reading" class="game-screen" data-screen="final-reading">
+        <section id="screen-final-reading" class="game-screen" data-screen="FINAL_READING">
             <h2>Final Reading</h2>
             <p><span id="reading-text">[Your group reading will appear here...]</span></p>
         </section>
 
         <!-- 10. Fate Resolution Screen -->
-        <section id="screen-fate-resolution" class="game-screen" data-screen="fate-resolution">
+        <section id="screen-fate-result" class="game-screen" data-screen="FATE_RESULT">
           <h2 id="fate-resolution-title">Fate Resolution</h2>
           <p><strong>Divination Title:</strong> <span id="divination-title">[Question]</span></p>
           <p><strong>Your Answer:</strong> <span id="divination-answer">[Chosen Answer]</span></p>
@@ -146,13 +141,19 @@
           <p><strong>Outcome:</strong> <span id="divination-outcome">[Result]</span></p>
         </section>
 
+        <section id="screen-credits" class="game-screen" data-screen="CREDITS">
+          <h2>Credits</h2>
+          <p>Designed by Sparr Games. Built for the connoisseurs.</p>
+        </section>
+
+
 
     </main>
 
    <div id="controller">
+  <button id="btn0" data-btn="0"><span class="button-label"></span></button>
   <button id="btn1" data-btn="1"><span class="button-label"></span></button>
   <button id="btn2" data-btn="2"><span class="button-label"></span></button>
-  <button id="btn3" data-btn="3"><span class="button-label"></span></button>
 </div>
 
     <!-- Hidden dev-only agent log for real-time diagnostics -->

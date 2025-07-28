@@ -64,7 +64,7 @@ export function evaluate(letter){
   };
 
   return {
-    nextScreen: SCREENS.QUESTION_RESULT,
+    nextScreen: SCREENS.REVEAL,
     statePatch: patch
   };
 }

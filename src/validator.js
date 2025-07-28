@@ -2,7 +2,24 @@ import { z } from 'zod';
 
 // Tweak to your actual screen ids
 export const Screen = z.enum([
-  'WELCOME','LOBBY','QUESTION','REVEAL','FATE','RESULTS','CREDITS'
+  'WELCOME',
+  'WAITING_ROOM',
+  'RULES',
+  'OPTIONS',
+  'GAME_LOBBY',
+  'ROUND_LOBBY',
+  'QUESTION',
+  'REVEAL',
+  'FATE',
+  'THREAD_SEVERED',
+  'FATE_RESULT',
+  'LAST_DECK',
+  'FINAL_QUESTION',
+  'FINAL_RESULT',
+  'FINAL_READING',
+  'GAME_OVER',
+  'RESULTS',
+  'CREDITS'
 ]);
 
 // Button/answer keys
