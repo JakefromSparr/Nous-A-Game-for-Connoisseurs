@@ -115,10 +115,10 @@ export function evaluate(choiceIndex, _state) {
   const isNotWrong = (kind === OUTCOME.TYPICAL || kind === OUTCOME.REVELATORY);
 
   // Queue a fate every 3rd answer (if available)
-  const totalAnswers = (tally.A || 0) + (tally.B || 0) + (tally.C || 0);
-  let pendingFateCard = S.pendingFateCard || null;
-  if (!pendingFateCard && totalAnswers % 3 === 0 && (S.fateCardDeck?.length || 0) > 0) {
-    pendingFateCard = S.fateCardDeck.find(c => !S.completedFateCardIds?.has?.(c.id)) || null;
+ // const totalAnswers = (tally.A || 0) + (tally.B || 0) + (tally.C || 0);
+ // let pendingFateCard = S.pendingFateCard || null;
+//  if (!pendingFateCard && totalAnswers % 3 === 0 && (S.fateCardDeck?.length || 0) > 0) {
+//    pendingFateCard = S.fateCardDeck.find(c => !S.completedFateCardIds?.has?.(c.id)) || null;
   }
 
   // Exhaust this question id
