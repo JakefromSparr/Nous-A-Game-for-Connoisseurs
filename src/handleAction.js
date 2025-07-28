@@ -16,7 +16,7 @@ function renderScreenBody(target, st) {
   }
   if (target === SCREENS.FATE && st.activeFateCard) {
     UI.showFateCard(st.activeFateCard);
-    UI.showFateChoicesFromState(st);
+    UI.showFateChoicesFromState(st); // show on-card labels too
   }
   if (target === SCREENS.REVEAL && st.lastOutcome) {
     UI.showResult(st.lastOutcome);
@@ -40,8 +40,15 @@ function applyResult({ patch, next } = {}) {
 
   UI.setButtonLabels(labels, (i) => {
     if (cfg.actions[i] === null) return true; // taunt/disabled
+
+    // Fate screen: disable missing choices
     if (target === SCREENS.FATE && st.fateChoices[i] == null) return true;
-    if (target === SCREENS.GAME_LOBBY && i === 1 && !st.pendingFateCard) return true;
+
+    // Game Lobby: center disabled once a fate is already loaded for this round
+    if (target === SCREENS.GAME_LOBBY && i === 1) {
+      const loaded = Array.isArray(st.activeRoundEffects) && st.activeRoundEffects.length > 0;
+      return loaded;
+    }
     return false;
   });
 
@@ -74,16 +81,13 @@ function doPull() {
   };
 }
 
-// After REVEAL: decide where to go (Sever? Fate? Round Lobby?)
+// After REVEAL: decide where to go (Sever? → sever screen, else back to Round Lobby)
+// NOTE: we no longer auto-enter Fate here (no auto-queued cards).
 function afterRevealAccept() {
   const s = State.getState();
   if (s.thread <= 0) {
-    const patch = Round.sever(s); // lives-1, bank 0, etc.
+    const patch = Round.sever(s);
     return { patch, next: SCREENS.THREAD_SEVERED };
-  }
-  if (s.pendingFateCard) {
-    const patch = Fate.armFate(s.pendingFateCard, s);
-    return { patch, next: SCREENS.FATE };
   }
   return { next: SCREENS.ROUND_LOBBY };
 }
@@ -117,14 +121,26 @@ const ACTIONS = {
   },
 
   /* GAME LOBBY */
-  'enter-fate'     : () => {
+  // Tempt Fate: only if nothing already loaded for this round
+  'tempt-fate' : () => {
     const s = State.getState();
-    if (!s.pendingFateCard) return {};
-    const patch = Fate.armFate(s.pendingFateCard, s);
+    const alreadyLoaded = Array.isArray(s.activeRoundEffects) && s.activeRoundEffects.length > 0;
+    if (alreadyLoaded) return {}; // disabled by UI, but guard anyway
+
+    const deck = s.fateCardDeck || [];
+    const available = deck.filter(c => !s.completedFateCardIds?.has?.(c.id));
+    const card = available.length ? available[(Math.random() * available.length) | 0] : null;
+    if (!card) return {}; // no cards left
+
+    const patch = Fate.armFate(card, s);
     return { patch, next: SCREENS.FATE };
   },
+
+  // Keep old name working, just in case a route still uses it
+  'enter-fate' : () => ACTIONS['tempt-fate'](),
+
   'to-round-lobby' : () => {
-    const patch = Round.startRound(State.getState()); // single source of truth
+    const patch = Round.startRound(State.getState()); // applies ROUND_START bonuses too
     return { patch, next: SCREENS.ROUND_LOBBY };
   },
 
@@ -134,7 +150,7 @@ const ACTIONS = {
     return { patch, next: SCREENS.FATE_RESULT };
   },
   'weave'   : () => {
-    State.spendThreadToWeave(); // centralized mutation
+    State.spendThreadToWeave();
     return {};
   },
   'pull'    : () => doPull(),
@@ -157,37 +173,39 @@ const ACTIONS = {
   'reveal-fight'  : () => afterRevealAccept(),
   'reveal-accept' : () => afterRevealAccept(),
 
-  /* FATE (guard empty slots even though UI disables them) */
+  /* FATE (choose a pre-round effect; then return to Game Lobby, not Fate Result) */
   'fate-choose-0' : () => {
     const s = State.getState();
     const choice = s.fateChoices[0];
     if (!choice) return {};
     const patch = Fate.applyChoice(choice, s);
-    return { patch, next: SCREENS.FATE_RESULT };
+    UI.showFateResult?.(choice.effect?.flavorText ?? ''); // optional flavor
+    return { patch, next: SCREENS.GAME_LOBBY };
   },
   'fate-choose-1' : () => {
     const s = State.getState();
     const choice = s.fateChoices[1];
     if (!choice) return {};
     const patch = Fate.applyChoice(choice, s);
-    return { patch, next: SCREENS.FATE_RESULT };
+    UI.showFateResult?.(choice.effect?.flavorText ?? '');
+    return { patch, next: SCREENS.GAME_LOBBY };
   },
   'fate-choose-2' : () => {
     const s = State.getState();
     const choice = s.fateChoices[2];
     if (!choice) return {};
     const patch = Fate.applyChoice(choice, s);
-    return { patch, next: SCREENS.FATE_RESULT };
+    UI.showFateResult?.(choice.effect?.flavorText ?? '');
+    return { patch, next: SCREENS.GAME_LOBBY };
   },
 
-  /* FATE RESULT */
+  /* FATE RESULT — end-of-round only */
   'fate-fight'  : () => ({ next: SCREENS.ROUND_LOBBY }),
   'fate-accept' : () => {
     const s = State.getState();
     const fateRes = Fate.resolveRound(s.roundAnswerTally, s.roundWon);
     const patch   = Round.finalizeRound(s, fateRes);
 
-    // decide next based on whether this round counts as a win
     const roundsWonNext = (s.roundsWon || 0) + (s.roundWon ? 1 : 0);
     const next = roundsWonNext >= (s.roundsToWin || 3)
       ? SCREENS.FINAL_READING
@@ -222,11 +240,9 @@ export function handleAction(btnIndex) {
     console.warn(`No action for button ${btnIndex} on ${state.currentScreen}`);
     return;
   }
-  if (action === null) {
-    // deliberate taunt / disabled
-    return;
-  }
+  if (action === null) return; // deliberate taunt
 
+  // extra guard on FATE
   if (state.currentScreen === SCREENS.FATE && state.fateChoices[btnIndex] == null) return;
 
   const fn = ACTIONS[action];
