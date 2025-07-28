@@ -1,269 +1,295 @@
+/* ===== (optional) Google Fonts =====
+   If you prefer <link> tags in index.html, remove this @import. */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=EB+Garamond:wght@400;500;600&display=swap');
 
-/* === CSS Variables & Fonts === */
+/* ===== CSS Variables ===== */
 :root {
-  --primary-bg: #1a120b;
+  --primary-bg: #0b0b0b;
   --wood-dark: #3e2b16;
   --wood-medium: #6f4f2c;
   --wood-light: #8a6e4d;
+
   --text-color: #d9c8a9;
   --gold-foil-dark: #a88d3d;
   --gold-foil-light: #f5e4c2;
+
   --title-font: 'Cinzel Decorative', serif;
   --body-font: 'EB Garamond', serif;
+
+  --glow-color: rgba(245, 228, 194, 0.7);
+  --shadow-color: rgba(0, 0, 0, 0.6);
+  --border-color: #2b1b0e;
+  --transition-speed: 0.3s;
+
+  --controller-height: 120px; /* base size; scales on mobile below */
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
+/* ===== Global Reset ===== */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
 body {
-  background-color: var(--primary-bg);
+  background: #000;
   color: var(--text-color);
   font-family: var(--body-font);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+
+  /* avoid content under fixed controller */
+  padding-bottom: calc(var(--controller-height) + 2.25rem + var(--safe-bottom));
   overflow: hidden;
-  background-image: linear-gradient(45deg, #3e2b16, #1a120b);
-  background-size: cover;
 }
 
-/* === Container Setup === */
+/* ===== App Container & Screens ===== */
 #app-container {
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
+  max-width: 1100px;
   display: flex;
   justify-content: center;
   align-items: center;
   position: relative;
+  perspective: 1000px;
 }
 
-/* === Screen Style === */
 .game-screen {
   display: none;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   text-align: center;
-  width: 90%;
+
+  width: 95%;
   max-width: 800px;
-  min-height: 400px;
-  padding: 2rem;
-  background: radial-gradient(circle at center, #050505 0%, #000 80%);
-  border: 4px solid #2b1b0e;
-  border-radius: 12px;
-  box-shadow: inset 0 0 80px #000, 0 0 10px #000;
+  min-height: 450px;
+  padding: 2.5rem;
+
+  background: radial-gradient(ellipse at center, rgba(5, 5, 5, 0.9) 0%, #000 70%);
+  border: 2px solid var(--border-color);
+  border-radius: 15px;
+  box-shadow:
+    inset 0 0 100px #000,
+    0 0 15px var(--shadow-color),
+    0 0 30px -10px var(--glow-color);
   z-index: 1;
+
+  will-change: opacity, transform;
+  animation: fadeIn 0.8s ease-in-out;
 }
 
-.game-screen.is-active {
-  display: flex;
+.game-screen.is-active { display: flex; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.985); }
+  to   { opacity: 1; transform: scale(1); }
 }
 
-/* === Typography === */
+/* ===== Titles & Copy ===== */
 h1, h2, h3, .gold-text {
   font-family: var(--title-font);
   background: linear-gradient(to top, var(--gold-foil-dark), var(--gold-foil-light));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+  text-shadow: 1px 1px 3px var(--shadow-color);
+  margin-bottom: 1rem;
 }
 
+h1 { font-size: 3.2rem; line-height: 1.05; }
+h2 { font-size: 2.3rem; }
+h3 { font-size: 1.6rem; }
+
 p, li {
-  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.4);
+  font-size: 1.2rem;
+  line-height: 1.6;
+  text-shadow: 1px 1px 3px var(--shadow-color);
+  max-width: 60ch;
+  margin: 0.25rem 0;
 }
 
 .subtitle {
-  font-size: 1.2rem;
-  font-family: var(--body-font);
-  letter-spacing: 2px;
-  margin-top: -1rem;
+  font-size: 1.1rem;
+  letter-spacing: 3px;
+  margin-top: -1.25rem;
   margin-bottom: 2rem;
+  opacity: 0.85;
 }
 
-/* === Wooden Buttons === */
-.wood-button {
-  background:
-    radial-gradient(ellipse at 30% 70%, transparent 0%, rgba(0,0,0,0.4) 100%),
-    linear-gradient(to right, var(--wood-medium), var(--wood-light) 30%, var(--wood-medium) 70%);
-  border: 4px solid #2b1b0e;
-  border-radius: 50%;
-  width: 140px;
-  height: 140px;
-  font-family: var(--title-font);
-  font-size: 1.2rem;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  margin: 1rem;
-  cursor: pointer;
-  box-shadow:
-    inset -4px -4px 8px rgba(0,0,0,0.7),
-    0px 5px 15px rgba(0,0,0,0.6);
-  transition: all 0.2s ease-out;
-}
-
-.wood-button:hover {
-  transform: translateY(-3px) scale(1.03);
-  box-shadow:
-    inset -3px -3px 6px rgba(0,0,0,0.6),
-    0px 8px 20px rgba(0,0,0,0.5);
-}
-
-.wood-button:active {
-  transform: translateY(1px) scale(1);
-  box-shadow:
-    inset 4px 4px 8px rgba(0,0,0,0.7),
-    0px 2px 5px rgba(0,0,0,0.6);
-}
-
-.wood-button:focus-visible {
-  outline: none;
-  box-shadow:
-    0 0 0 2px var(--gold-foil-dark),
-    0 0 10px var(--gold-foil-light);
-}
-
-.wood-button .button-label {
-  background: linear-gradient(to top, var(--gold-foil-dark), var(--gold-foil-light));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  text-shadow: 1px 1px 1px rgba(0,0,0,0.4);
-}
-
-/* === Welcome Option List === */
-#welcome-options {
-  list-style: none;
-  margin-top: 1rem;
-  padding: 0;
-  text-align: left;
-}
-
+/* ===== Welcome Menu ===== */
+#welcome-options { list-style: none; margin-top: 1.5rem; text-align: left; }
 #welcome-options li {
-  font-size: 1.5rem;
-  padding: 0.5rem 0;
-  margin: 0.5rem 0;
+  font-size: 1.6rem;
+  padding: 0.4rem 0.25rem 0.4rem 0;
+  margin: 0.35rem 0;
   position: relative;
+  cursor: pointer;
+  transition: color var(--transition-speed);
 }
-
 #welcome-options li.selected {
   color: var(--gold-foil-light);
+  text-shadow: 0 0 10px var(--glow-color);
 }
-
 #welcome-options li.selected::before {
   content: '▶';
   position: absolute;
   left: -1.5rem;
   color: var(--gold-foil-light);
+  text-shadow: 0 0 10px var(--glow-color);
+  transition: transform var(--transition-speed);
 }
 
-/* === Shuttle-style Controller Pointer === */
-#welcome-options li span {
-  display: inline-block;
-  width: 20px;
-  visibility: hidden;
-}
-
-#welcome-options li.selected span {
-  visibility: visible;
-}
-
-/* === Button Container === */
-.button-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-top: 2rem;
-  z-index: 1;
-}
-
-button.hidden {
-  visibility: hidden;
+/* ===== Screen Transition Overlay ===== */
+#app-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: #000;
+  z-index: 100;
+  clip-path: circle(0% at 50% 50%);
+  transition: clip-path 0.7s cubic-bezier(0.65, 0, 0.35, 1);
   pointer-events: none;
 }
+#app-container.is-transitioning::before { clip-path: circle(150% at 50% 50%); }
 
-/* === Controller Positioning === */
+/* ===== Controller ===== */
 #controller {
   position: fixed;
-  bottom: 1rem;
   left: 50%;
+  bottom: calc(1rem + var(--safe-bottom));
   transform: translateX(-50%);
   display: flex;
   justify-content: center;
   align-items: center;
+  gap: 1rem;
+
   width: 100%;
+  max-width: 900px;
+  padding: 0 1rem;
   z-index: 101;
 }
 
-/* === Transition Overlay === */
-#app-container::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: #000;
-  z-index: 100;
-  clip-path: circle(0 at 50% 50%);
-  transition: clip-path 0.7s cubic-bezier(0.4, 0, 0.2, 1);
-  pointer-events: none;
+/* === Buttons (.ctrl with ids btn0/btn1/btn2) === */
+.ctrl {
+  background:
+    radial-gradient(ellipse at 30% 70%, transparent 0%, rgba(0,0,0,0.55) 100%),
+    linear-gradient(to right, var(--wood-medium), var(--wood-light) 30%, var(--wood-medium) 70%);
+  border: 3px solid var(--border-color);
+  border-radius: 50%;
+  width: var(--controller-height);
+  height: var(--controller-height);
+
+  font-family: var(--title-font);
+  font-size: 1.05rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  box-shadow:
+    inset -5px -5px 10px rgba(0,0,0,0.7),
+    0px 6px 18px var(--shadow-color);
+  transition: transform var(--transition-speed) ease-out, box-shadow var(--transition-speed) ease-out, filter var(--transition-speed);
 }
 
-#app-container.is-transitioning::before {
-  clip-path: circle(calc(max(100vw, 100vh)) at 50% 50%);
-  pointer-events: auto;
+.ctrl .button-label {
+  background: linear-gradient(to top, var(--gold-foil-dark), var(--gold-foil-light));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+  transition: opacity var(--transition-speed), filter var(--transition-speed);
 }
 
-/* === Accessibility === */
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  border: 0;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  clip-path: inset(50%);
-  white-space: nowrap;
+.ctrl:hover:not(:disabled):not(.disabled):not([aria-disabled="true"]) {
+  transform: translateY(-4px) scale(1.05);
+  box-shadow:
+    inset -4px -4px 8px rgba(0,0,0,0.6),
+    0px 10px 25px var(--shadow-color);
 }
 
-/* === Responsive === */
-@media (max-width: 600px) {
-  #app-container {
-    align-items: flex-start;
-    padding-top: 1rem;
-  }
-
-  #controller {
-    bottom: 0.5rem;
-  }
+.ctrl:active:not(:disabled):not(.disabled):not([aria-disabled="true"]) {
+  transform: translateY(2px) scale(0.985);
+  box-shadow:
+    inset 5px 5px 10px rgba(0,0,0,0.8),
+    0px 2px 5px var(--shadow-color);
 }
 
-/* 1. tighter hidden state */
-button.hidden {
+.ctrl:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 3px var(--primary-bg),
+    0 0 0 5px var(--gold-foil-light),
+    0 0 20px var(--gold-foil-light);
+}
+
+/* Disabled states: support :disabled, .disabled class, and aria-disabled */
+.ctrl:disabled,
+.ctrl.disabled,
+.ctrl[aria-disabled="true"] {
+  filter: brightness(0.65) saturate(0.9);
+  cursor: not-allowed;
+  transform: scale(0.96);
+  opacity: 0.7;
+}
+
+.ctrl.hidden {
   visibility: hidden;
-  opacity: 0;          /* NEW */
+  opacity: 0;
+  transform: scale(0.85);
   pointer-events: none;
 }
 
-/* 2. respect reduced-motion */
-@media (prefers-reduced-motion: reduce) {
-  #app-container::before {
-    transition: none;
-    clip-path: circle(0 at 50% 50%);
-  }
-  #app-container.is-transitioning::before {
-    clip-path: circle(0 at 50% 50%);
-  }
+/* ===== Accessibility helpers ===== */
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
 }
 
-/* 3. lighter mobile shadows */
-@media (max-width: 600px) {
-  .wood-button {
-    box-shadow:
-      inset -3px -3px 6px rgba(0,0,0,0.6),
-      0px 3px 8px rgba(0,0,0,0.5);     /* smaller */
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+  h1 { font-size: 2.6rem; }
+  h2 { font-size: 1.9rem; }
+  p, li { font-size: 1.05rem; }
+
+  .game-screen {
+    padding: 1.75rem 1.25rem;
+    min-height: 88vh;
+  }
+
+  :root { --controller-height: 96px; }
+  #controller { gap: 0.6rem; }
+  .ctrl { border-width: 2px; font-size: 0.95rem; }
+}
+
+@media (max-width: 480px) {
+  h1 { font-size: 2.1rem; }
+  h2 { font-size: 1.6rem; }
+  p, li { font-size: 0.98rem; }
+
+  :root { --controller-height: 84px; }
+}
+
+/* ===== Reduced Motion ===== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
   }
 }
