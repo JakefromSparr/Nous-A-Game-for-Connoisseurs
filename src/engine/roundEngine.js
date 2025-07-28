@@ -1,110 +1,109 @@
 // src/engine/roundEngine.js
-import { State }      from '../state.js';
-import * as Fate from './fateEngine.js';      
-import { SCREENS }    from '../constants/screens.js';
+import { DEFAULTS } from '../state.js';
+import { clamp } from './utils.js';
 
-/* ─────────── round helpers ─────────── */
+/**
+ * Start a round: use nextRoundT0 if present, else baseT0.
+ * Does NOT increment roundNumber (that happens at finalizeRound).
+ * Returns a patch; router sets screen to ROUND_LOBBY.
+ */
+export function startRound(state) {
+  const t0 = typeof state.nextRoundT0 === 'number' ? state.nextRoundT0 : DEFAULTS.baseT0;
 
-export function startNewRound () {
-  const S = State.getState();
+  return {
+    // fresh round runtime
+    roundScore: 0,
+    notWrongCount: 0,
+    thread: t0,
+    weavePrimed: false,
 
-  State.patch({
-    roundNumber   : S.roundNumber + 1,
-    roundScore    : 0,
-    thread        : (S.roundsToWin - S.roundsWon) + 1,
-    notWrongCount : 0,
-    activeRoundEffects : [],
-    roundAnswerTally   : { A:0, B:0, C:0 },
-    activePowerUps     : [],
-    answeredThisRound  : [],
-    currentFateCard    : null,
-    currentAnswers     : [],
-    currentCategory    : 'Mind, Past'
-  });
+    // clear question/fate UI
+    currentQuestion: null,
+    currentAnswers: [],
+    currentCategory: '',
+    roundAnswerTally: { A: 0, B: 0, C: 0 },
 
-  /* promote any pending card */
-  if (S.pendingFateCard) {
-    State.patch({ activeFateCard: S.pendingFateCard, pendingFateCard:null });
+    pendingFateCard: null,
+    activeFateCard: null,
+    fateChoices: [null, null, null],
 
-    // Scholar’s Boon quick effect
-    if (S.activeFateCard.id === 'DYN005') {
-      S.thread += 1;
-    }
-  }
-
-  return { nextScreen: SCREENS.ROUND_LOBBY };
+    // bookkeeping
+    roundEndedBy: null,
+    roundWon: false,
+  };
 }
 
-/* spend a Thread to swap category hint */
-export function spendThreadToWeave () {
-  const S = State.getState();
-  if (S.thread <= 0) return false;
-  S.thread--;
-  shuffleNextCategory();
-  return true;
+/**
+ * Player chooses to end the round (Tie Off) from Round Lobby.
+ * - Bank roundScore into pendingBank.
+ * - Compute carry-over thread for next round (nextRoundT0).
+ * - Mark win if notWrongCount >= 3.
+ * Global score is NOT updated here; that happens at Fate Resolution.
+ */
+export function tieOff(state) {
+  const leftoverThread = Math.max(0, state.thread || 0);
+  const threadCap = DEFAULTS.threadCapBase + Math.floor((state.audacity || 0) / 2);
+  const nextRoundT0 = clamp((DEFAULTS.baseT0 + leftoverThread), 3, threadCap);
+
+  return {
+    pendingBank: state.roundScore || 0,
+    nextRoundT0,
+    roundEndedBy: 'TIE_OFF',
+    roundWon: (state.notWrongCount || 0) >= 3,
+  };
 }
 
-export function pullThread () {
-  const S = State.getState();
-  if (S.thread > 0) S.thread--;
+/**
+ * Forced end (Sever): thread <= 0 after a question resolution.
+ * - Lose 1 life.
+ * - Bank 0.
+ * - No carry-over (nextRoundT0 = null so next round starts at baseT0).
+ */
+export function sever(state) {
+  return {
+    pendingBank: 0,
+    lives: Math.max(0, (state.lives || 0) - 1),
+    nextRoundT0: null,
+    roundEndedBy: 'SEVER',
+    roundWon: (state.notWrongCount || 0) >= 3,
+  };
 }
 
-export function cutThread () {
-  endRound('escape');
-  return true;
+/**
+ * Finalize round at Fate Resolution → Accept:
+ * - Add pendingBank to global score.
+ * - Increment roundsWon if roundWon.
+ * - Advance roundNumber.
+ * - Reset round-local fields for lobby.
+ * nextRoundT0 remains whatever tieOff/sever set.
+ */
+export function finalizeRound(state) {
+  const newScore = (state.score || 0) + (state.pendingBank || 0);
+  const wonInc   = state.roundWon ? 1 : 0;
+
+  return {
+    score: newScore,
+    pendingBank: 0,
+
+    roundsWon: (state.roundsWon || 0) + wonInc,
+    roundNumber: (state.roundNumber || 1) + 1,
+
+    // clear round-local scratch
+    roundScore: 0,
+    notWrongCount: 0,
+    thread: 0,
+    weavePrimed: false,
+
+    currentQuestion: null,
+    currentAnswers: [],
+    currentCategory: '',
+    roundAnswerTally: { A: 0, B: 0, C: 0 },
+
+    pendingFateCard: null,
+    activeFateCard: null,
+    fateChoices: [null, null, null],
+
+    roundEndedBy: null,
+    roundWon: false,
+  };
 }
-
-export function shuffleNextCategory () {
-  const cats = ['Mind, Present','Body, Future','Soul, Past'];
-  State.patch({ currentCategory: cats[Math.random()*cats.length|0] });
-}
-
-/* ─────────── END-OF-ROUND LOGIC ─────────── */
-export function endRound (result='lose') {
-  const S   = State.getState();
-
-  /* resolve fate effects first */
-  const tally      = S.roundAnswerTally;
-  const fateResult = Fate.resolveRound(tally, result==='win');
-
-  /* apply fate deltas */
-  if (fateResult) {
-    S.score      += fateResult.scoreDelta       ?? 0;
-    S.roundScore += fateResult.roundScoreDelta  ?? 0;
-    S.roundScore *= fateResult.roundScoreMultiplier ?? 1;
-  }
-
-  /* outcome bookkeeping */
-  if (result==='win'){
-    S.roundsWon++;
-    S.score     += S.roundScore;
-  } else if (result==='lose'){
-    S.lives--;
-  } else if (result==='escape'){
-    S.score     += S.roundScore;
-  }
-
-  /* clear per-round scratch */
-  S.roundScore        = 0;
-  S.activeRoundEffects= [];
-  S.roundAnswerTally  = { A:0, B:0, C:0 };
-  S.answeredThisRound = [];
-  S.activePowerUps    = [];
-  S.activeFateCard    = null;
-
-  /* decide next screen */
-  if (S.lives <= 0)       return { nextScreen: SCREENS.GAME_OVER };
-  if (S.roundsWon >= S.roundsToWin) return { nextScreen: SCREENS.FINAL_READING };
-  return { nextScreen: SCREENS.GAME_LOBBY };
-}
-
-/* ─────────── difficulty ramp (optional) ─────────── */
-export function advanceDifficulty () {
-  const S = State.getState();
-  if (S.difficultyLevel < 3) {
-    S.difficultyLevel++;
-    S.correctAnswersThisDifficulty = 0;
-    console.log(`[DIFFICULTY] now ${S.difficultyLevel}`);
-  }
-}
-
