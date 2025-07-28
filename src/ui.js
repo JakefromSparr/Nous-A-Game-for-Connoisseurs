@@ -1,5 +1,6 @@
 // src/ui.js
 // Pure presentation layer – no game logic, no routing.
+import { State } from './state.js';
 
 export const UI = (() => {
   /* ─────────────── DOM refs ─────────────── */
@@ -9,9 +10,9 @@ export const UI = (() => {
   const agentLog    = document.getElementById('last-change');
 
   const buttons = [
-    document.getElementById('btn-1'),
-    document.getElementById('btn-2'),
-    document.getElementById('btn-3')
+    document.getElementById('btn0'),
+    document.getElementById('btn1'),
+    document.getElementById('btn2')
   ];
   const screens = document.querySelectorAll('.game-screen');
 
@@ -45,7 +46,7 @@ export const UI = (() => {
       agentLog.textContent   = `Last state: ${name}`;
       ariaStatus.textContent = name.replace(/-/g,' ');
 
-      if (name==='welcome') updateWelcomeHighlight();
+      if (name==='WELCOME') updateWelcomeHighlight();
       app.classList.remove('is-transitioning');
     }, 700);
   }
@@ -86,6 +87,9 @@ export const UI = (() => {
     ids('answer-a').textContent=q.choices?.A||'';
     ids('answer-b').textContent=q.choices?.B||'';
     ids('answer-c').textContent=q.choices?.C||'';
+    const labels = (State.getState().currentAnswers||[]).map(a=>a.label);
+    while(labels.length<3) labels.push('');
+    setButtonLabels(labels);
   }
 
   function showFateCard(card){
@@ -93,8 +97,13 @@ export const UI = (() => {
     ids('fate-card-text' ).textContent=card.text;
   }
 
-  function showFateChoices(labels=[]){
-    while(labels.length<3) labels.push('');
+  function showFateChoices(){
+    const choices = State.getState().fateChoices || [];
+    const labels = [0,1,2].map(i => {
+      const c = choices[i];
+      if (c === null) return '';
+      return c?.label ?? 'NOUS';
+    });
     setButtonLabels(labels);
   }
 
@@ -104,6 +113,7 @@ export const UI = (() => {
     ids('result-chosen-answer' ).textContent=r.answer;
     ids('result-explanation'   ).textContent=r.explanation;
     ids('result-outcome-message').textContent=r.outcomeText;
+    setButtonLabels(['Fight Fate','', 'Accept Fate']);
   }
 
   function showFailure(ptsLost){
@@ -111,7 +121,8 @@ export const UI = (() => {
   }
 
   function showFateResult(txt){
-    if (txt){ console.log('[FATE RESULT]',txt); alert(txt); }
+    if (txt){ console.log('[FATE RESULT]',txt); }
+    setButtonLabels(['Fight Fate','', 'Accept Fate']);
   }
 
   /* participant mini-view --------------------------------------- */
