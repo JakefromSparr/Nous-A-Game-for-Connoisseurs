@@ -1,97 +1,123 @@
-// src/engine/fateEngine.js
+// src/engine/questionEngine.js
 import { State } from '../state.js';
+import { shuffle } from './utils.js';
+import { OUTCOME, OUTCOME_EFFECT, WEAVE } from '../constants/answerLogic.js';
 
-/* Scratch buffers for the current round’s fate effects */
-let immediateScore = 0;           // global points awarded at Fate Resolution
-let roundEffects   = [];          // effects that apply to the round’s bank/tally
+// Determine outcome kind for a given question + key ('A' | 'B' | 'C')
+function getKind(q, key) {
+  // Preferred: explicit map
+  if (q.answerKinds && q.answerKinds[key]) return q.answerKinds[key];
 
-/* Normalize 0..3 options → array of length 3 with null placeholders */
-function normalizeFateChoices(options = []) {
-  const out = [null, null, null];
-  for (let i = 0; i < Math.min(3, options.length); i++) {
-    const o = options[i] || {};
-    out[i] = {
-      id: o.id ?? `${i}`,
-      label: o.label ?? 'Option',
-      effect: o.effect ?? null,
-    };
+  // answers[] form
+  if (Array.isArray(q.answers)) {
+    const a = q.answers.find(a => (a.key || '').toUpperCase() === key);
+    const cls = (a?.answerClass || '').toUpperCase();
+    if (cls === 'TYPICAL' || cls === 'REVELATORY' || cls === 'WRONG') return cls;
   }
-  return out;
+
+  // Fallback: q.correct marks TYPICAL; pick one other as REVELATORY, last as WRONG
+  if (q.correct) {
+    if (key === q.correct) return OUTCOME.TYPICAL;
+    const others = ['A','B','C'].filter(k => k !== q.correct);
+    return key === others[0] ? OUTCOME.REVELATORY : OUTCOME.WRONG;
+  }
+
+  // Worst-case: assume C is WRONG, A/B TYPICAL
+  return key === 'C' ? OUTCOME.WRONG : OUTCOME.TYPICAL;
 }
 
-/* Arm a pending card: set activeFateCard + fateChoices; clear pending */
-export function armFate(card, state) {
-  const opts = Array.isArray(card?.choices) ? card.choices : (card?.options || []);
+// Build on-screen answers array [{key,label}] from either deck form
+function buildAnswers(q) {
+  if (Array.isArray(q.answers) && q.answers.length >= 3) {
+    const mapped = q.answers.map(a => ({ key: (a.key || '').toUpperCase(), label: a.label || String(a.key) }));
+    return shuffle(mapped);
+  }
+  const arr = [
+    { key: 'A', label: q.choices?.A ?? 'A' },
+    { key: 'B', label: q.choices?.B ?? 'B' },
+    { key: 'C', label: q.choices?.C ?? 'C' },
+  ];
+  return shuffle(arr);
+}
+
+// Draw next question, respecting tier (<= active) and exhaustion
+export function drawQuestion(state) {
+  const S = State.getState(); // use fresh state (Sets mutate)
+  const deck = S.questionDeck || [];
+  const answered = S.answeredQuestionIds || new Set();
+  const activeTier = Math.min(S.roundNumber || 1, 3);
+
+  const pool = deck.filter(q =>
+    !answered.has(q.id ?? q.questionId) &&
+    (typeof q.tier !== 'number' || q.tier <= activeTier)
+  );
+
+  const q = pool.length ? pool[(Math.random() * pool.length) | 0] : null;
+  if (!q) return { question: null, answers: [], category: '' };
+
   return {
-    activeFateCard: card ?? null,
-    fateChoices: normalizeFateChoices(opts),
-    pendingFateCard: null,
+    question: q,
+    answers: buildAnswers(q),
+    category: q.category || q.title || '',
   };
 }
 
-/* Apply a chosen fate option (pure patch), clear active card */
-export function applyChoice(choice, state) {
-  if (!choice?.effect) {
-    // null/ignored choice just clears the card
-    return { activeFateCard: null, fateChoices: [null, null, null] };
-  }
-
-  applyEffect(choice.effect, state.activeFateCard?.title || '');
-  state.completedFateCardIds?.add?.(state.activeFateCard?.id); // be defensive
-
-  return { activeFateCard: null, fateChoices: [null, null, null] };
-}
-
-/* Resolve all armed fate effects at end of round (FATE_RESULT → Accept) */
-export function resolveRound(tally /* {A,B,C} */, _won) {
-  let scoreDelta       = immediateScore; // global score bonus at resolution
-  let roundScoreDelta  = 0;              // modifies pending bank additively
-  let roundMultiplier  = 1;              // modifies pending bank multiplicatively
-
-  roundEffects.forEach(e => {
-    if (e.type === 'APPLY_WAGER') {
-      const letter = String(e.target || '').split('-').pop().toUpperCase();
-      const count  = (tally?.[letter] || 0);
-      if (e.reward?.type === 'SCORE') roundScoreDelta += (e.reward.value || 0) * count;
-
-    } else if (e.type === 'TALLY_TABLE') {
-      const cnt = (tally?.[e.target] || 0);
-      const rw  = e.table?.[cnt];
-      if (!rw) return;
-
-      if (rw.type === 'DOUBLE_ROUND_SCORE') roundMultiplier *= 2;
-      else if (rw.type === 'SCORE')         scoreDelta      += (rw.value || 0);
-    }
-  });
-
-  // reset for next round
-  immediateScore = 0;
-  roundEffects   = [];
-
-  return { scoreDelta, roundScoreDelta, roundScoreMultiplier: roundMultiplier };
-}
-
-/* Internal: apply a single effect immediately (to scratch or state) */
-function applyEffect(e = {}, cardTitle = '') {
+// Evaluate a chosen answer (choiceIndex 0..2). Baseline pull already applied.
+export function evaluate(choiceIndex, state) {
   const S = State.getState();
+  const q = S.currentQuestion;
+  const a = S.currentAnswers?.[choiceIndex];
 
-  switch (e.type) {
-    case 'IMMEDIATE_SCORE':
-      immediateScore += Number(e.value || 0);
-      break;
+  if (!q || !a) return { patch: {} };
 
-    case 'SCORE':
-      // affects roundScore immediately (allowed by blueprint)
-      S.roundScore = (S.roundScore || 0) + Number(e.value || 0);
-      break;
+  const key  = (a.key || '').toUpperCase();
+  const kind = getKind(q, key);
+  const eff  = OUTCOME_EFFECT[kind] || { points: 0, threadDelta: 0 };
 
-    case 'POWER_UP':
-      S.activePowerUps = Array.isArray(S.activePowerUps) ? S.activePowerUps : [];
-      S.activePowerUps.push(e.power);
-      break;
+  // Round points (weave doubles), thread delta (post-baseline), tallies
+  const weaveMult = S.weavePrimed ? WEAVE.multiplier : 1;
+  const gainedPts = (eff.points || 0) * weaveMult;
 
-    // Delayed effects resolved at FATE_RESULT (use resolveRound)
-    default:
-      roundEffects.push({ ...e, cardTitle });
+  // Update tally counts by key (A/B/C)
+  const tally = { ...(S.roundAnswerTally || { A:0, B:0, C:0 }) };
+  tally[key] = (tally[key] || 0) + 1;
+
+  const isNotWrong = (kind === OUTCOME.TYPICAL || kind === OUTCOME.REVELATORY);
+
+  // Optional deterministic fate queueing (every 3rd answer)
+  const totalAnswers = (tally.A || 0) + (tally.B || 0) + (tally.C || 0);
+  let pendingFateCard = S.pendingFateCard || null;
+  if (!pendingFateCard && totalAnswers % 3 === 0 && (S.fateCardDeck?.length || 0) > 0) {
+    pendingFateCard = S.fateCardDeck.find(c => !S.completedFateCardIds?.has?.(c.id)) || null;
   }
+
+  // Mark as answered to exhaust later draws
+  const qid = q.id ?? q.questionId;
+  S.answeredQuestionIds?.add?.(qid);
+
+  const patch = {
+    // round outputs
+    roundScore: (S.roundScore || 0) + gainedPts,
+    thread: (S.thread || 0) + (eff.threadDelta || 0),
+    weavePrimed: false,
+
+    // bookkeeping
+    roundAnswerTally: tally,
+    notWrongCount: (S.notWrongCount || 0) + (isNotWrong ? 1 : 0),
+    pendingFateCard,
+
+    // clear current question (REVEAL screen renders from last fields if desired)
+    currentQuestion: S.currentQuestion,   // keep for REVEAL text if needed
+    currentAnswers : S.currentAnswers,
+    lastOutcome: {                         // optional payload for REVEAL UI
+      kind,
+      chosenKey: key,
+      chosenLabel: a.label || key,
+      pointsGained: gainedPts,
+      threadDelta: eff.threadDelta || 0,
+      questionText: q.text || q.prompt || '',
+    },
+  };
+
+  return { patch };
 }
