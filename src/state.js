@@ -171,6 +171,7 @@ function startNewRound() {
     currentQuestion: null,
     currentAnswers: [],
     currentCategory: '',
+    roundAnswerTally: emptyTally(),
 
     pendingFateCard: null,
     activeFateCard: null,
@@ -180,6 +181,7 @@ function startNewRound() {
     roundWon: false,
   });
 }
+
 
 // Spend 1 thread in Round Lobby to prime double points for the next question
 function spendThreadToWeave() {
