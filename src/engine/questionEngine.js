@@ -1,89 +1,97 @@
-
-// src/engine/questionEngine.js
-import { TRAIT_LOADINGS }   from '../constants/traitConfig.js';
-import { SCREENS } from '../constants/screens.js';
+// src/engine/fateEngine.js
 import { State } from '../state.js';
-import { shuffle, clamp } from './utils.js';
-import { CLASS_SCORES, CLASS_TRAIT_BASE } from '../constants/answerLogic.js';
 
+/* Scratch buffers for the current round’s fate effects */
+let immediateScore = 0;           // global points awarded at Fate Resolution
+let roundEffects   = [];          // effects that apply to the round’s bank/tally
 
-export function draw(){
-  const S = State.getState();
-  if (!S.questionDeck.length) return null;
-  const q = S.questionDeck.shift();     // simple queue, or however you want
-  const answers = shuffle([...q.answers]);
-  State.patch({
-    currentQuestion : q,
-    currentAnswers  : answers
-  });
-  return { ...q, answers };
+/* Normalize 0..3 options → array of length 3 with null placeholders */
+function normalizeFateChoices(options = []) {
+  const out = [null, null, null];
+  for (let i = 0; i < Math.min(3, options.length); i++) {
+    const o = options[i] || {};
+    out[i] = {
+      id: o.id ?? `${i}`,
+      label: o.label ?? 'Option',
+      effect: o.effect ?? null,
+    };
+  }
+  return out;
 }
 
-export function evaluate(letter){
-  const S = State.getState();
-  const q = S.currentQuestion;
-  const idx = String(letter).toUpperCase().charCodeAt(0) - 65; // A->0
-  const ans = S.currentAnswers[idx];
-
-  if (!q || !ans) {
-    console.error('[EVALUATE] Missing question or answer', letter);
-    return {};
-  }
-
-  const cls = ans.answerClass;
-  if (!cls) {
-    console.error('[EVALUATE] Missing classification for answer', letter);
-    return {};
-  }
-
-  // tally + history
-  S.roundAnswerTally[letter] = (S.roundAnswerTally[letter] || 0) + 1;
-  recordAnswer(q.questionId, letter);
-
-  // score + thread
-  const { points = 0, thread = 0 } = CLASS_SCORES[cls] || {};
-  S.score      += points;
-  S.roundScore += points;
-  S.thread      = Math.max(0, S.thread + thread);
-
-  // track streak of non-wrong answers
-  S.notWrongCount = cls === 'Wrong' ? 0 : S.notWrongCount + 1;
-
-  // trait deltas
-  applyTraitDelta(cls, q.questionId);
-
-  const patch = {
-    score         : S.score,
-    roundScore    : S.roundScore,
-    thread        : S.thread,
-    traits        : { ...S.traits },
-    lastClassification : cls,
-    lastAnswerCorrect  : cls !== 'Wrong',
-    currentQuestion : null,
-    currentAnswers  : []
-  };
-
+/* Arm a pending card: set activeFateCard + fateChoices; clear pending */
+export function armFate(card, state) {
+  const opts = Array.isArray(card?.choices) ? card.choices : (card?.options || []);
   return {
-    nextScreen: SCREENS.QUESTION_RESULT,
-    statePatch: patch
+    activeFateCard: card ?? null,
+    fateChoices: normalizeFateChoices(opts),
+    pendingFateCard: null,
   };
 }
 
-export function applyTraitDelta(cls, qId){
-  const S   = State.getState();
-  const cfg = TRAIT_LOADINGS[qId] || {};
-  const wt  = cfg.axisWeight || {};
-  const ov  = cfg.overrides?.[cls] || {};
-  const base= CLASS_TRAIT_BASE[cls];
+/* Apply a chosen fate option (pure patch), clear active card */
+export function applyChoice(choice, state) {
+  if (!choice?.effect) {
+    // null/ignored choice just clears the card
+    return { activeFateCard: null, fateChoices: [null, null, null] };
+  }
 
-  ['X','Y','Z'].forEach(axis=>{
-    const delta = axis in ov ? ov[axis] : base[axis] * (wt[axis] ?? 1);
-    S.traits[axis] = clamp(S.traits[axis] + delta, -9, 9);
+  applyEffect(choice.effect, state.activeFateCard?.title || '');
+  state.completedFateCardIds?.add?.(state.activeFateCard?.id); // be defensive
+
+  return { activeFateCard: null, fateChoices: [null, null, null] };
+}
+
+/* Resolve all armed fate effects at end of round (FATE_RESULT → Accept) */
+export function resolveRound(tally /* {A,B,C} */, _won) {
+  let scoreDelta       = immediateScore; // global score bonus at resolution
+  let roundScoreDelta  = 0;              // modifies pending bank additively
+  let roundMultiplier  = 1;              // modifies pending bank multiplicatively
+
+  roundEffects.forEach(e => {
+    if (e.type === 'APPLY_WAGER') {
+      const letter = String(e.target || '').split('-').pop().toUpperCase();
+      const count  = (tally?.[letter] || 0);
+      if (e.reward?.type === 'SCORE') roundScoreDelta += (e.reward.value || 0) * count;
+
+    } else if (e.type === 'TALLY_TABLE') {
+      const cnt = (tally?.[e.target] || 0);
+      const rw  = e.table?.[cnt];
+      if (!rw) return;
+
+      if (rw.type === 'DOUBLE_ROUND_SCORE') roundMultiplier *= 2;
+      else if (rw.type === 'SCORE')         scoreDelta      += (rw.value || 0);
+    }
   });
+
+  // reset for next round
+  immediateScore = 0;
+  roundEffects   = [];
+
+  return { scoreDelta, roundScoreDelta, roundScoreMultiplier: roundMultiplier };
 }
 
-/* Utility */
-export function recordAnswer(qid,letter){
-  State.getState().answeredThisRound.push({qid,letter});
-}
+/* Internal: apply a single effect immediately (to scratch or state) */
+function applyEffect(e = {}, cardTitle = '') {
+  const S = State.getState();
 
+  switch (e.type) {
+    case 'IMMEDIATE_SCORE':
+      immediateScore += Number(e.value || 0);
+      break;
+
+    case 'SCORE':
+      // affects roundScore immediately (allowed by blueprint)
+      S.roundScore = (S.roundScore || 0) + Number(e.value || 0);
+      break;
+
+    case 'POWER_UP':
+      S.activePowerUps = Array.isArray(S.activePowerUps) ? S.activePowerUps : [];
+      S.activePowerUps.push(e.power);
+      break;
+
+    // Delayed effects resolved at FATE_RESULT (use resolveRound)
+    default:
+      roundEffects.push({ ...e, cardTitle });
+  }
+}
