@@ -37,19 +37,20 @@ function buildAnswers(q) {
 }
 
 /* ---------- Trait application per answer ---------- */
-const toTitle = (clsUpper) => clsUpper ? (clsUpper[0] + clsUpper.slice(1).toLowerCase()) : '';
+const toTitle = (clsUpper) =>
+  clsUpper ? clsUpper[0] + clsUpper.slice(1).toLowerCase() : '';
 
 function applyTraitDelta(questionId, kindUpper) {
   const S = State.getState();
   const titleKey = toTitle(kindUpper); // 'TYPICAL' -> 'Typical', etc.
 
-  const cfg = TRAIT_LOADINGS[questionId] || {};
-  const wt  = cfg.axisWeight || {};                   // e.g., { Z: 1.5 }
-  const ov  = (cfg.overrides && cfg.overrides[titleKey]) || null;
-  const base = CLASS_TRAIT_BASE[titleKey] || { X:0, Y:0, Z:0 };
+  const cfg  = TRAIT_LOADINGS[questionId] || {};
+  const wt   = cfg.axisWeight || {};                   // e.g., { Z: 1.5 }
+  const ov   = (cfg.overrides && cfg.overrides[titleKey]) || null;
+  const base = CLASS_TRAIT_BASE[titleKey] || { X: 0, Y: 0, Z: 0 };
 
   // override wins; else base * weight (default weight 1.0)
-  ['X','Y','Z'].forEach(axis => {
+  ['X', 'Y', 'Z'].forEach(axis => {
     const overrideVal = ov && (ov[axis] ?? null);
     const weight      = (wt[axis] != null) ? wt[axis] : 1;
     const delta       = (overrideVal != null) ? overrideVal : (base[axis] || 0) * weight;
@@ -109,36 +110,34 @@ export function evaluate(choiceIndex, _state) {
   const gainedPts = (eff.points || 0) * weaveMult;
 
   // Tally by key
-  const tally = { ...(S.roundAnswerTally || { A:0, B:0, C:0 }) };
+  const tally = { ...(S.roundAnswerTally || { A: 0, B: 0, C: 0 }) };
   tally[key] = (tally[key] || 0) + 1;
 
   const isNotWrong = (kind === OUTCOME.TYPICAL || kind === OUTCOME.REVELATORY);
 
-  // Queue a fate every 3rd answer (if available)
- // const totalAnswers = (tally.A || 0) + (tally.B || 0) + (tally.C || 0);
- // let pendingFateCard = S.pendingFateCard || null;
-//  if (!pendingFateCard && totalAnswers % 3 === 0 && (S.fateCardDeck?.length || 0) > 0) {
-//    pendingFateCard = S.fateCardDeck.find(c => !S.completedFateCardIds?.has?.(c.id)) || null;
-  }
+  // No more auto fate-queuing here — handled explicitly via Tempt Fate in Game Lobby.
 
   // Exhaust this question id
   S.answeredQuestionIds?.add?.(q.id);
 
-  // Apply TRAIT deltas (per question config)
+  // Apply trait deltas
   applyTraitDelta(q.id, kind);
 
   const patch = {
+    // scores/thread
     roundScore: (S.roundScore || 0) + gainedPts,
     thread: (S.thread || 0) + (eff.threadDelta || 0),
     weavePrimed: false,
 
+    // tallies + bookkeeping
     roundAnswerTally: tally,
     notWrongCount: (S.notWrongCount || 0) + (isNotWrong ? 1 : 0),
-    pendingFateCard,
 
-    // Keep for REVEAL UI
+    // keep current question/answers for REVEAL UI
     currentQuestion: S.currentQuestion,
     currentAnswers : S.currentAnswers,
+
+    // payload for REVEAL
     lastOutcome: {
       kind,                                  // 'TYPICAL' | 'REVELATORY' | 'WRONG'
       chosenKey: key,
