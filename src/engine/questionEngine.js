@@ -5,22 +5,18 @@ import { OUTCOME, OUTCOME_EFFECT, WEAVE } from '../constants/answerLogic.js';
 import { TRAIT_LOADINGS } from '../constants/traitConfig.js';
 import { CLASS_TRAIT_BASE } from '../constants/answerLogic.js';
 
-// Toggleable demo fallback: allow repeats if the tier pool is exhausted.
+// Toggleable fallback: allow repeats if the tier pool is exhausted.
 const ALLOW_REPEATS_WHEN_EXHAUSTED = false;
 
 /* ---------- Outcome fallback (legacy decks only) ---------- */
 function getKind(q, key) {
-  // Legacy explicit map
   if (q.answerKinds && q.answerKinds[key]) return q.answerKinds[key];
 
-  // Legacy fallback: q.correct marks TYPICAL; one other REVELATORY; last WRONG
   if (q.correct) {
     if (key === q.correct) return OUTCOME.TYPICAL;
     const others = ['A', 'B', 'C'].filter(k => k !== q.correct);
     return key === others[0] ? OUTCOME.REVELATORY : OUTCOME.WRONG;
   }
-
-  // Defensive default
   return key === 'C' ? OUTCOME.WRONG : OUTCOME.TYPICAL;
 }
 
@@ -42,14 +38,13 @@ const toTitle = (clsUpper) =>
 
 function applyTraitDelta(questionId, kindUpper) {
   const S = State.getState();
-  const titleKey = toTitle(kindUpper); // 'TYPICAL' -> 'Typical', etc.
+  const titleKey = toTitle(kindUpper); // 'TYPICAL' -> 'Typical'
 
   const cfg  = TRAIT_LOADINGS[questionId] || {};
   const wt   = cfg.axisWeight || {};                   // e.g., { Z: 1.5 }
   const ov   = (cfg.overrides && cfg.overrides[titleKey]) || null;
   const base = CLASS_TRAIT_BASE[titleKey] || { X: 0, Y: 0, Z: 0 };
 
-  // override wins; else base * weight (default weight 1.0)
   ['X', 'Y', 'Z'].forEach(axis => {
     const overrideVal = ov && (ov[axis] ?? null);
     const weight      = (wt[axis] != null) ? wt[axis] : 1;
@@ -59,14 +54,16 @@ function applyTraitDelta(questionId, kindUpper) {
   });
 }
 
-/* ---------- Draw next question (tier + exhaustion) ---------- */
+/* ---------- Draw next question (tier gating by difficultyLevel) ---------- */
 export function drawQuestion(_state) {
   const S = State.getState();
   const deck = S.questionDeck || [];
   const answered = S.answeredQuestionIds || new Set();
-  const activeTier = Math.min(S.roundNumber || 1, 3);
 
-  // Valid, unanswered, tier-legal, with 3 answers
+  // **Key change**: use current unlocked difficulty to gate tiers.
+  const activeTier = Math.max(1, Math.min(S.difficultyLevel || 1, 7));
+
+  // Valid, unanswered, <= activeTier, and has 3+ answers
   const pool = deck.filter(q =>
     !answered.has(q.id) &&
     (!q.tier || q.tier <= activeTier) &&
@@ -75,7 +72,7 @@ export function drawQuestion(_state) {
 
   let q = pool.length ? pool[(Math.random() * pool.length) | 0] : null;
 
-  // Optional demo resilience: allow repeats if exhausted
+  // Optional: allow repeats when exhausted (for demo resilience)
   if (!q && ALLOW_REPEATS_WHEN_EXHAUSTED) {
     const repeatPool = deck.filter(q =>
       (!q.tier || q.tier <= activeTier) &&
@@ -115,7 +112,7 @@ export function evaluate(choiceIndex, _state) {
 
   const isNotWrong = (kind === OUTCOME.TYPICAL || kind === OUTCOME.REVELATORY);
 
-  // No more auto fate-queuing here — handled explicitly via Tempt Fate in Game Lobby.
+  // No auto Fate queuing — Tempt Fate is explicit in Game Lobby.
 
   // Exhaust this question id
   S.answeredQuestionIds?.add?.(q.id);
