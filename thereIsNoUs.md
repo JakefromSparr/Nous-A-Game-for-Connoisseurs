@@ -210,3 +210,28 @@ export const Voice = {
 | **Grin**    | See constant list | —        | —      |
 
 Add new lines by extending the arrays; engine picks randomly.
+
+## QUESTION TIER TAXONOMY
+Tier	Name	Right-Answer Pattern	Player Feeling	Voice phase hook
+0	Invitation	3 / 3	“Oh, everything works.”	Whisper
+1	Classic Cut	2 of 3	“Bias revealed.”	Whisper
+2	Moral Compass	2 of 3 (values)	“It’s about us now.”	Whisper → Grin
+3	Scholar’s Gambit	2 of 3 (jargon vs folk)	“Am I smart or gullible?”	Grin
+4	Unfair Game	1 of 3	“The mirror is cheating.”	Grin (UI glitches escalate)
+5	Shattered Mirror	0 of 3 (projection)	“We’re exposed; nothing is real.”	Shatter
+
+(If you keep Tier-3 split, label 3a/3b inside docs.)
+
+## Implementation hooks
+Engine flag	When set	Effect
+state.tierIndex	Increment after N questions or specific Fate draw	Picks next tier pool
+state.voicePhase	Already defined	Advance to grin when tier ≥ 2 or first voice trigger fires
+state.isUnfair	When tier === 4	Answer evaluation flips to single-truth; UI taunts
+state.isMirror	Tier 5 card drawn	Disable score display; show projection line after choice
+
+## Orthogonal dials:
+
+Tier intent (what kind of cut)
+NOUS Rating (how deep it cuts)
+Voice phase (how the mirror talks)
+Fate cards (episodic twists)
