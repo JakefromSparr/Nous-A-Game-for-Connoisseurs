@@ -1,165 +1,212 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NOUS — A Game for Connoisseurs</title>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>NOUS — A Game for Connoisseurs</title>
+    <link rel="stylesheet" href="/style.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=EB+Garamond:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
 
-  <!-- Fonts & styles -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=EB+Garamond&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css" />
+  <body>
+    <!-- ARIA live region for screen announcements -->
+    <div id="aria-status" class="visually-hidden" aria-live="polite"></div>
 
-  <!-- App entry (Vite) -->
-  <script type="module" src="./src/script.js"></script>
-</head>
-<body>
-  <!-- Main container; UI shows exactly one .game-screen at a time -->
-  <main id="app-container" data-game-state="WELCOME">
-    <!-- WELCOME -->
-    <section id="screen-welcome" class="game-screen is-active" data-screen="WELCOME">
-      <h1>NOUS</h1>
-      <h2 class="subtitle">A GAME FOR CONNOISSEURS</h2>
-      <p>Will what you know save you from what you don’t?</p>
+    <!-- App container controls visibility of screens -->
+    <main id="app-container" data-game-state="WELCOME">
+      <!-- ───────────────── WELCOME ───────────────── -->
+      <section class="game-screen is-active" data-screen="WELCOME" aria-hidden="false">
+        <h1 class="gold-text">NOUS</h1>
+        <p class="subtitle">A Game for Connoisseurs</p>
 
-      <ul id="welcome-options">
-        <li class="selected"><span aria-hidden="true">▶</span> Play</li>
-        <li><span aria-hidden="true"></span> Rules</li>
-        <li><span aria-hidden="true"></span> Options</li>
-      </ul>
-    </section>
+        <ul id="welcome-options" aria-label="Main menu">
+          <li>Play</li>
+          <li>Rules</li>
+          <li>Options</li>
+          <li>Tutorial</li>     <!-- NEW -->
+          <li>Reset Save</li>   <!-- NEW -->
+        </ul>
 
-    <!-- WAITING ROOM -->
-    <section id="screen-waiting-room" class="game-screen" data-screen="WAITING_ROOM">
-      <h2>Waiting Room</h2>
-      <p>How many will be participating tonight?</p>
-      <p>Participants: <span id="participant-count-display">1</span></p>
-      <p id="participant-flavor" class="flavor-text" hidden></p>
-    </section>
+        <p id="last-change" class="visually-hidden" aria-hidden="true"></p>
+      </section>
 
-    <!-- RULES -->
-    <section id="screen-rules" class="game-screen" data-screen="RULES">
-      <h2>Rules</h2>
-      <p>Answer questions to gather Thread. Don’t let your Thread run out. Some choices have… consequences.</p>
-    </section>
+      <!-- ───────────────── WAITING ROOM ───────────────── -->
+      <section class="game-screen" data-screen="WAITING_ROOM" aria-hidden="true">
+        <h2 class="gold-text">Waiting Room</h2>
+        <p>How many are gathered tonight?</p>
 
-    <!-- OPTIONS -->
-    <section id="screen-options" class="game-screen" data-screen="OPTIONS">
-      <h2>Options</h2>
-      <p>Difficulty: <span id="difficulty-display">Standard</span></p>
-      <p>Sound: <span id="sound-display">On</span></p>
-      <p class="hint">Use the controller to adjust. Select to toggle.</p>
-    </section>
+        <div id="participant-panel" role="group" aria-label="Participants">
+          <p>
+            <strong>Participants:</strong>
+            <span id="participant-count-display">1</span>
+          </p>
+          <p id="participant-flavor" hidden class="subtitle"></p>
+        </div>
+      </section>
 
-    <!-- GAME LOBBY -->
-    <section id="screen-game-lobby" class="game-screen" data-screen="GAME_LOBBY">
-      <h2>Game Lobby</h2>
-      <div class="lobby-display">
-        <p>Lives Remaining: <span id="lives-display">[#]</span></p>
-        <p>Rounds Remaining: <span id="rounds-display">[#]</span></p>
-        <p>Total Score: <span id="score-display">[#]</span></p>
-      </div>
-      <div id="divinations-display">
-        <h3>Current Divinations</h3>
-        <p id="divinations-text">[Divination text will appear here…]</p>
-      </div>
-      <div id="flavor-whispers">
-        <p class="whisper"><em>[The walls are listening…]</em></p>
-      </div>
-    </section>
+      <!-- ───────────────── RULES ───────────────── -->
+      <section class="game-screen" data-screen="RULES" aria-hidden="true">
+        <h2 class="gold-text">What This Is</h2>
+        <p>
+          You share three buttons. You pull thread to reveal questions. You may
+          tie it off to bank your gains… or keep pulling and risk it all.
+        </p>
+        <p>
+          Answer choices are not always what they seem. Some are safe, some are
+          revealing, some are wrong. Fate watches. Fate remembers.
+        </p>
+      </section>
 
-    <!-- ROUND LOBBY -->
-    <section id="screen-round-lobby" class="game-screen" data-screen="ROUND_LOBBY">
-      <h2>Round <span id="round-number-display">[#]</span></h2>
-      <div class="round-display">
-        <p>Active Divinations: <span id="active-divinations">[None]</span></p>
-        <p>Points Earned this Round: <span id="round-score">[#]</span></p>
-        <p>Thread Length Remaining: <span id="thread-display">[#]</span></p>
-        <p>Next Category: <span id="category-hint">[Faded Ink]</span></p>
-      </div>
-    </section>
+      <!-- ───────────────── OPTIONS ───────────────── -->
+      <section class="game-screen" data-screen="OPTIONS" aria-hidden="true">
+        <h2 class="gold-text">Options</h2>
 
-    <!-- QUESTION -->
-    <section id="screen-question" class="game-screen" data-screen="QUESTION">
-      <h2 id="question-title">[Category / Title]</h2>
-      <p id="question-text">[The question text will appear here.]</p>
-      <div class="answer-options">
-        <p>A: <span id="answer-a">[Answer Option A]</span></p>
-        <p>B: <span id="answer-b">[Answer Option B]</span></p>
-        <p>C: <span id="answer-c">[Answer Option C]</span></p>
-      </div>
-    </section>
+        <!-- Difficulty -->
+        <div id="difficulty-block" style="margin: 1rem 0 2rem;">
+          <h3>Difficulty</h3>
+          <p class="subtitle">
+            Sets the highest tier of questions that can appear this session.
+          </p>
 
-    <!-- REVEAL -->
-    <section id="screen-reveal" class="game-screen" data-screen="REVEAL">
-      <h2 id="result-header">[Correct / Not Wrong / Wrong]</h2>
-      <div class="result-details">
-        <p><strong>Question:</strong> <span id="result-question">[Question]</span></p>
-        <p><strong>Your Answer:</strong> <span id="result-chosen-answer">[Chosen Answer]</span></p>
-        <p><strong>Explanation:</strong> <span id="result-explanation">[Explanation…]</span></p>
-      </div>
-      <div class="result-status">
-        <p><strong>Outcome:</strong> <span id="result-outcome-message">[Thread Gained / Lost]</span></p>
-      </div>
-    </section>
+          <div
+            id="difficulty-gauge"
+            aria-label="Difficulty gauge"
+            role="group"
+            style="display:flex;align-items:center;gap:1rem;justify-content:center"
+          >
+            <!-- purely visual; UI/handler will update #difficulty-display -->
+            <meter
+              id="difficulty-meter"
+              min="1"
+              max="3"
+              value="1"
+              aria-hidden="true"
+              style="width:260px;height:1rem"
+            ></meter>
+            <span id="difficulty-display" aria-live="polite">1</span>
+          </div>
 
-    <!-- FATE -->
-    <section id="screen-fate" class="game-screen" data-screen="FATE">
-      <h2 id="fate-card-title">[Fate Title]</h2>
-      <p id="fate-card-text">[The whisper of destiny will appear here.]</p>
-      <div class="answer-options">
-        <p>A: <span id="fate-a-text">[Option A]</span></p>
-        <p>B: <span id="fate-b-text">[Option B / NOUS]</span></p>
-        <p>C: <span id="fate-c-text">[Option C / NOUS]</span></p>
-      </div>
-    </section>
+          <p style="opacity:.85;margin-top:.5rem">
+            <em>1</em> → only Tier&nbsp;1 cards •
+            <em>2</em> → Tiers&nbsp;1–2 •
+            <em>3</em> → Tiers&nbsp;1–3
+          </p>
+        </div>
 
-    <!-- FATE RESULT -->
-    <section id="screen-fate-result" class="game-screen" data-screen="FATE_RESULT">
-      <h2 id="fate-resolution-title">Fate Resolution</h2>
-      <p><strong>Divination Title:</strong> <span id="divination-title">[Question]</span></p>
-      <p><strong>Your Answer:</strong> <span id="divination-answer">[Chosen Answer]</span></p>
-      <p><strong>Round Tally:</strong> <span id="divination-summary">[Summary…]</span></p>
-      <p><strong>Outcome:</strong> <span id="divination-outcome">[Result]</span></p>
-    </section>
+        <!-- Back affordance (controller maps the left button to "back") -->
+        <p class="subtitle">Use the left button to go back.</p>
+      </section>
 
-    <!-- THREAD SEVERED -->
-    <section id="screen-thread-severed" class="game-screen" data-screen="THREAD_SEVERED">
-      <h2>Thread Severed</h2>
-      <p>Points Lost This Round: <span id="lost-points-display">[#]</span></p>
-      <p>The exit was just ’round that corner… Next time, maybe.</p>
-    </section>
+      <!-- ───────────────── GAME LOBBY ───────────────── -->
+      <section class="game-screen" data-screen="GAME_LOBBY" aria-hidden="true">
+        <h2 class="gold-text">The Parlor</h2>
 
-    <!-- FINAL READING -->
-    <section id="screen-final-reading" class="game-screen" data-screen="FINAL_READING">
-      <h2>Final Reading</h2>
-      <p id="reading-text">[Your group reading will appear here…]</p>
-    </section>
+        <div id="hud">
+          <p><strong>Lives:</strong> <span id="lives-display">0</span></p>
+          <p><strong>Rounds to Win:</strong> <span id="rounds-display">3</span></p>
+          <p><strong>Score:</strong> <span id="score-display">0</span></p>
+          <p>
+            <strong>Active Divinations:</strong>
+            <span id="divinations-text">[None]</span>
+          </p>
+        </div>
+      </section>
 
-    <!-- CREDITS -->
-    <section id="screen-credits" class="game-screen" data-screen="CREDITS">
-      <h2>Credits</h2>
-      <p>Designed by Sparr Games.</p>
-      <p>Built for the connoisseurs.</p>
-    </section>
-  </main>
+      <!-- ───────────────── ROUND LOBBY ───────────────── -->
+      <section class="game-screen" data-screen="ROUND_LOBBY" aria-hidden="true">
+        <h2 class="gold-text">Round Lobby</h2>
 
-  <!-- Controller: exactly three buttons, 0-based indices -->
-  <div id="controller" role="group" aria-label="Controller">
-    <button id="btn0" data-btn="0" class="ctrl"><span class="button-label">A</span></button>
-    <button id="btn1" data-btn="1" class="ctrl"><span class="button-label">B</span></button>
-    <button id="btn2" data-btn="2" class="ctrl"><span class="button-label">C</span></button>
-  </div>
+        <div id="round-hud" style="margin-bottom:1rem">
+          <p><strong>Round:</strong> <span id="round-number-display">1</span></p>
+          <p><strong>Thread:</strong> <span id="thread-display">0</span></p>
+          <p><strong>Round Score:</strong> <span id="round-score">0</span></p>
+          <p><strong>Category Hint:</strong> <span id="current-category"><span id="category-hint">[Faded Ink]</span></span></p>
+          <p>
+            <strong>Divinations this Round:</strong>
+            <span id="divinations-text-round">[None]</span>
+          </p>
+        </div>
 
-  <!-- Dev-only agent log (hidden by default) -->
-  <div id="agent-log" hidden>
-    <h4>Agent Notes</h4>
-    <p id="last-change">Last state: <code>WELCOME</code></p>
-  </div>
+        <p class="subtitle">Weave to double the next question’s points.</p>
+      </section>
 
-  <!-- ARIA live region for label/status updates -->
-  <div id="aria-status" class="visually-hidden" aria-live="polite" role="status"></div>
-</body>
+      <!-- ───────────────── QUESTION ───────────────── -->
+      <section class="game-screen" data-screen="QUESTION" aria-hidden="true">
+        <h2 id="question-title" class="gold-text">Question</h2>
+        <p id="question-text">…</p>
+
+        <ul aria-label="Answers" style="margin-top:1rem;list-style:none">
+          <li><strong>A</strong> — <span id="answer-a"></span></li>
+          <li><strong>B</strong> — <span id="answer-b"></span></li>
+          <li><strong>C</strong> — <span id="answer-c"></span></li>
+        </ul>
+      </section>
+
+      <!-- ───────────────── REVEAL ───────────────── -->
+      <section class="game-screen" data-screen="REVEAL" aria-hidden="true">
+        <h2 id="result-header" class="gold-text">Result</h2>
+        <p id="result-question" class="subtitle"></p>
+        <p><strong>Your answer:</strong> <span id="result-chosen-answer"></span></p>
+        <p id="result-explanation" style="margin-top:1rem"></p>
+        <p id="result-outcome-message" style="margin-top:1rem"></p>
+      </section>
+
+      <!-- ───────────────── FATE ───────────────── -->
+      <section class="game-screen" data-screen="FATE" aria-hidden="true">
+        <h2 id="fate-card-title" class="gold-text">Fate</h2>
+        <p id="fate-card-text" style="margin-bottom:1rem"></p>
+
+        <!-- Inline display of choice labels (controller shows buttons anyway) -->
+        <ul aria-label="Fate choices" style="list-style:none;opacity:.85">
+          <li>A — <span id="fate-a-text">NOUS</span></li>
+          <li>B — <span id="fate-b-text">NOUS</span></li>
+          <li>C — <span id="fate-c-text">NOUS</span></li>
+        </ul>
+      </section>
+
+      <!-- ───────────────── FATE RESULT ───────────────── -->
+      <section class="game-screen" data-screen="FATE_RESULT" aria-hidden="true">
+        <h2 class="gold-text">The Tally</h2>
+        <p id="divination-outcome"></p>
+      </section>
+
+      <!-- ───────────────── THREAD SEVERED ───────────────── -->
+      <section class="game-screen" data-screen="THREAD_SEVERED" aria-hidden="true">
+        <h2 class="gold-text">Thread Severed</h2>
+        <p class="subtitle">You lose the round’s bank.</p>
+        <p>Lost: <span id="lost-points-display">0</span></p>
+      </section>
+
+      <!-- ───────────────── FINAL READING ───────────────── -->
+      <section class="game-screen" data-screen="FINAL_READING" aria-hidden="true">
+        <h2 class="gold-text">Final Reading</h2>
+        <p class="subtitle">It knows you now.</p>
+        <div id="reading-body">
+          <!-- your dynamic epilogue content -->
+        </div>
+      </section>
+
+      <!-- ───────────────── CREDITS ───────────────── -->
+      <section class="game-screen" data-screen="CREDITS" aria-hidden="true">
+        <h2 class="gold-text">Credits</h2>
+        <p>Created by <strong>Jake Spencer</strong> — © Sparr Games.</p>
+      </section>
+    </main>
+
+    <!-- Three-button controller -->
+    <nav id="controller" data-controller-state="WELCOME" aria-label="Controller">
+      <button id="btn0" class="ctrl"><span class="button-label">A</span></button>
+      <button id="btn1" class="ctrl"><span class="button-label">B</span></button>
+      <button id="btn2" class="ctrl"><span class="button-label">C</span></button>
+    </nav>
+
+    <!-- App entry -->
+    <script type="module" src="/src/script.js"></script>
+  </body>
 </html>
