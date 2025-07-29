@@ -5,6 +5,21 @@ import { handleAction, refreshUI } from './handleAction.js';
 import { ROUTES, guardRoutes } from './constants/routes.js';
 import { SCREENS } from './constants/screens.js';
 
+// On load, support ?reset=1 or #reset to clear save
+if (location.search.includes('reset=1') || location.hash.includes('reset')) {
+  localStorage.removeItem('nous-save');
+}
+// Shift+R on Welcome to clear save and reload
+window.addEventListener('keydown', (e) => {
+  if (e.shiftKey && (e.key === 'R' || e.key === 'r')) {
+    const s = window.State?.getState?.();
+    if (s?.currentScreen === 'WELCOME') {
+      localStorage.removeItem('nous-save');
+      location.reload();
+    }
+  }
+});
+
 document.addEventListener('DOMContentLoaded', async () => {
   // 1) Load decks from JSON files, then try restoring a saved game state.
   await State.loadData();
