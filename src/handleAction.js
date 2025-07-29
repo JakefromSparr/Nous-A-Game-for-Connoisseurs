@@ -7,6 +7,7 @@ import { UI }      from './ui.js';
 import * as Q     from './engine/questionEngine.js';
 import * as Fate  from './engine/fateEngine.js';
 import * as Round from './engine/roundEngine.js';
+import { Tutorial } from './engine/tutorialEngine.js';
 
 /* ---------------- helpers ---------------- */
 
@@ -63,6 +64,21 @@ function doPull() {
   if (s.thread <= 0) return { next: SCREENS.ROUND_LOBBY };
 
   const afterPull = s.thread - 1;
+
+  // Tutorial override: if active, pull the tutorial question instead of deck.
+  if (Tutorial.isActive(s)) {
+    const { question, answers, category } = Tutorial.draw(s);
+    return {
+      patch: {
+        thread: afterPull,
+        currentQuestion: question,
+        currentAnswers : answers,
+        currentCategory: category,
+      },
+      next: SCREENS.QUESTION,
+    };
+  }
+
   const { question, answers, category } = Q.drawQuestion(s);
 
   if (!question) {
@@ -89,6 +105,10 @@ function afterRevealAccept() {
     const patch = Round.sever(s);
     return { patch, next: SCREENS.THREAD_SEVERED };
   }
+  const st2 = State.getState();
+  if (Tutorial.isActive(st2)) {
+    Tutorial.advanceAfterReveal(st2);
+  }
   return { next: SCREENS.ROUND_LOBBY };
 }
 
@@ -103,6 +123,17 @@ const ACTIONS = {
     if (choice === 'Play')    return { next: SCREENS.WAITING_ROOM };
     if (choice === 'Rules')   return { next: SCREENS.RULES };
     if (choice === 'Options') return { next: SCREENS.OPTIONS };
+    if (choice === 'Tutorial') {
+      const s = State.getState();
+      import('./engine/tutorialEngine.js').then(() => {
+        // ensure tutorial flag exists
+        s.tutorial = s.tutorial || {};
+        // start tutorial and jump to Game Lobby
+        Tutorial.start(s);
+        applyResult({ next: SCREENS.GAME_LOBBY });
+      });
+      return {};
+    }
     return {};
   },
   'back-to-welcome' : () => ({ next: SCREENS.WELCOME }),
@@ -158,14 +189,32 @@ const ACTIONS = {
   /* QUESTION (answers 0/1/2) */
   'choose-0': () => {
     const res = Q.evaluate(0, State.getState());
+    // If tutorial is active and a choice was made, record the key for disabling on second pass
+    const st = State.getState();
+    if (Tutorial.isActive(st)) {
+      const a = st.currentAnswers?.[0];
+      if (a?.key) Tutorial.recordChoice(st, String(a.key).toUpperCase());
+    }
     return { patch: res?.patch, next: SCREENS.REVEAL };
   },
   'choose-1': () => {
     const res = Q.evaluate(1, State.getState());
+    // If tutorial is active and a choice was made, record the key for disabling on second pass
+    const st = State.getState();
+    if (Tutorial.isActive(st)) {
+      const a = st.currentAnswers?.[1];
+      if (a?.key) Tutorial.recordChoice(st, String(a.key).toUpperCase());
+    }
     return { patch: res?.patch, next: SCREENS.REVEAL };
   },
   'choose-2': () => {
     const res = Q.evaluate(2, State.getState());
+    // If tutorial is active and a choice was made, record the key for disabling on second pass
+    const st = State.getState();
+    if (Tutorial.isActive(st)) {
+      const a = st.currentAnswers?.[2];
+      if (a?.key) Tutorial.recordChoice(st, String(a.key).toUpperCase());
+    }
     return { patch: res?.patch, next: SCREENS.REVEAL };
   },
 
