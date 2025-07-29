@@ -4,6 +4,7 @@ export const SCREENS = Object.freeze({
   WAITING_ROOM   : 'WAITING_ROOM',
   RULES          : 'RULES',
   OPTIONS        : 'OPTIONS',
+  TUTORIAL       : 'TUTORIAL',        // ← NEW
   GAME_LOBBY     : 'GAME_LOBBY',
   ROUND_LOBBY    : 'ROUND_LOBBY',
   QUESTION       : 'QUESTION',
