@@ -22,19 +22,26 @@ export const ROUTES = {
   },
 
   [SCREENS.OPTIONS]: {
-    labels: ['Down','Select','Up'],
-    actions: ['options-down','options-select','options-up'],
+    // Left is now Back so players aren’t trapped in Options
+    labels: ['Back','Confirm','Harder →'],
+    actions: ['back-to-welcome','options-select','options-next-difficulty'],
+  },
+
+  // ───────────── TUTORIAL LANDING ─────────────
+  [SCREENS.TUTORIAL]: {
+    labels: ['Back','Begin','More'],
+    actions: ['back-to-welcome','tutorial-begin','tutorial-more'],
   },
 
   // ───────────── MAIN LOBBY ─────────────
   [SCREENS.GAME_LOBBY]: {
     labels: [
       () => 'Turn Back',
-      // Tempt Fate is available only when no round-long effect is loaded
+      // Tempt Fate is available only when there is NOT already a loaded round-long effect
       s => (Array.isArray(s.activeRoundEffects) && s.activeRoundEffects.length > 0 ? 'NOUS' : 'Tempt Fate'),
       () => 'Push On',
     ],
-    actions: ['back-to-welcome','tempt-fate','to-round-lobby'], // center uses the new 'tempt-fate' action
+    actions: ['back-to-welcome','tempt-fate','to-round-lobby'],
   },
 
   // ───────────── ROUND LOBBY ─────────────
@@ -72,7 +79,7 @@ export const ROUTES = {
   // ───────────── FATE RESULT ─────────────
   [SCREENS.FATE_RESULT]: {
     labels: ['Fight Fate','Plead Case','Accept Fate'],
-    actions: ['fate-fight', null, 'fate-accept'],       // Plead Case = null
+    actions: ['fate-fight', null, 'fate-accept'],
   },
 
   // ───────────── THREAD SEVERED ─────────────
