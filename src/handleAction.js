@@ -4,9 +4,10 @@ import { ROUTES }  from './constants/routes.js';
 import { State }   from './state.js';
 import { UI }      from './ui.js';
 
-import * as Q     from './engine/questionEngine.js';
-import * as Fate  from './engine/fateEngine.js';
-import * as Round from './engine/roundEngine.js';
+import * as Q        from './engine/questionEngine.js';
+import * as Fate     from './engine/fateEngine.js';
+import * as Round    from './engine/roundEngine.js';
+import * as Tutorial from './engine/tutorialEngine.js'; // assumed present
 
 /* ---------------- helpers ---------------- */
 
@@ -82,9 +83,15 @@ function doPull() {
 }
 
 // After REVEAL: decide where to go (Sever? → sever screen, else back to Round Lobby)
-// NOTE: we no longer auto-enter Fate here (no auto-queued cards).
+// Also handle natural difficulty ramp here (we now know the last outcome).
 function afterRevealAccept() {
   const s = State.getState();
+
+  // 1) Difficulty ramp based on the last answer outcome
+  const kind = s.lastOutcome?.kind;
+  if (kind) State.noteAnswerOutcome(kind);
+
+  // 2) End-of-thread handling
   if (s.thread <= 0) {
     const patch = Round.sever(s);
     return { patch, next: SCREENS.THREAD_SEVERED };
@@ -99,17 +106,28 @@ const ACTIONS = {
   'welcome-up'      : () => (UI.moveWelcomeSelection('up'),  {}),
   'welcome-down'    : () => (UI.moveWelcomeSelection('down'),{}),
   'welcome-select'  : () => {
-    const choice = UI.getWelcomeSelection();
-    if (choice === 'Play')    return { next: SCREENS.WAITING_ROOM };
-    if (choice === 'Rules')   return { next: SCREENS.RULES };
-    if (choice === 'Options') return { next: SCREENS.OPTIONS };
+    const choice = (UI.getWelcomeSelection() || '').toLowerCase();
+    if (choice === 'play')     return { next: SCREENS.WAITING_ROOM };
+    if (choice === 'rules')    return { next: SCREENS.RULES };
+    if (choice === 'options')  return { next: SCREENS.OPTIONS };
+    if (choice === 'tutorial') return { next: SCREENS.TUTORIAL };
+    if (choice === 'reset save') {
+      State.clearSave();
+      return { next: SCREENS.WELCOME };
+    }
     return {};
   },
   'back-to-welcome' : () => ({ next: SCREENS.WELCOME }),
   'rules-more'      : () => ({}),
-  'options-down'    : () => (UI.moveOptions?.('down'),{}),
-  'options-up'      : () => (UI.moveOptions?.('up'),  {}),
-  'options-select'  : () => (UI.selectOption?.(),     {}),
+
+  // Options: left is Back, center Confirm (noop for now), right cycles difficulty 1→3
+  'options-select'            : () => ({}),
+  'options-next-difficulty'   : () => {
+    const s = State.getState();
+    const next = (s.startingDifficulty % 3) + 1;  // 1→2→3→1
+    State.setStartingDifficulty(next);
+    return {}; // UI reads from state
+  },
 
   /* WAITING ROOM */
   'participants-down': () => (UI.adjustParticipantCount(-1), {}),
@@ -118,6 +136,16 @@ const ACTIONS = {
     const n = UI.confirmParticipants();
     State.initializeGame(n);
     return { next: SCREENS.GAME_LOBBY };
+  },
+
+  /* TUTORIAL LANDING */
+  'tutorial-begin' : () => {
+    const res = (Tutorial?.begin && Tutorial.begin(State.getState())) || null;
+    return res || { next: SCREENS.QUESTION };
+  },
+  'tutorial-more'  : () => {
+    const res = (Tutorial?.more && Tutorial.more(State.getState())) || null;
+    return res || {};
   },
 
   /* GAME LOBBY */
@@ -135,8 +163,7 @@ const ACTIONS = {
     const patch = Fate.armFate(card, s);
     return { patch, next: SCREENS.FATE };
   },
-
-  // Keep old name working, just in case a route still uses it
+  // legacy name if an old route still references it
   'enter-fate' : () => ACTIONS['tempt-fate'](),
 
   'to-round-lobby' : () => {
@@ -173,13 +200,13 @@ const ACTIONS = {
   'reveal-fight'  : () => afterRevealAccept(),
   'reveal-accept' : () => afterRevealAccept(),
 
-  /* FATE (choose a pre-round effect; then return to Game Lobby, not Fate Result) */
+  /* FATE (choose a pre-round effect; then return to Game Lobby) */
   'fate-choose-0' : () => {
     const s = State.getState();
     const choice = s.fateChoices[0];
     if (!choice) return {};
     const patch = Fate.applyChoice(choice, s);
-    UI.showFateResult?.(choice.effect?.flavorText ?? ''); // optional flavor
+    UI.showFateResult?.(choice.effect?.flavorText ?? '');
     return { patch, next: SCREENS.GAME_LOBBY };
   },
   'fate-choose-1' : () => {
@@ -242,7 +269,7 @@ export function handleAction(btnIndex) {
   }
   if (action === null) return; // deliberate taunt
 
-  // extra guard on FATE
+  // guard on FATE
   if (state.currentScreen === SCREENS.FATE && state.fateChoices[btnIndex] == null) return;
 
   const fn = ACTIONS[action];
