@@ -2,10 +2,10 @@
 import { z } from 'zod';
 import { SCREENS } from './constants/screens.js';
 
-// Use your real screen ids (lowercase) so this never drifts
+// Keep this in sync with your exported screen IDs.
 export const Screen = z.enum(Object.values(SCREENS));
 
-// Shared bits
+/* ───────── Shared ───────── */
 export const ABC = z.enum(['A','B','C']);
 
 const Tally = z.object({
@@ -28,10 +28,13 @@ const ActiveRoundEffect = z.object({
   threadDelta: z.number().optional(),
 }).passthrough();
 
-const FateRef = z.any().nullable();       // we persist full cards, so allow passthrough
+const FateRef = z.any().nullable();       // we persist full cards; allow passthrough
 const QuestionRef = z.any().nullable();   // same for current question
 
-// Persisted shape (arrays for Sets, tolerant for runtime-only fields)
+/* ───────── Persisted shape ─────────
+   - Sets are arrays in storage
+   - We allow passthrough objects for Fate/Question scaffolding
+*/
 export const persistedGameStateSchema = z.object({
   schemaVersion: z.literal(1).default(1),
 
@@ -54,9 +57,12 @@ export const persistedGameStateSchema = z.object({
 
   notWrongCount: z.number().int().min(0),
 
-  audacity: z.number().int().min(0),
-  difficultyLevel: z.number().int().min(1),
+  // Difficulty
+  startingDifficulty: z.number().int().min(1).max(3).default(1),  // user preference (1..3)
+  difficultyLevel: z.number().int().min(1),                       // live unlocked cap (up to 7)
   correctAnswersThisDifficulty: z.number().int().min(0),
+
+  audacity: z.number().int().min(0),
 
   // Sets are stored as arrays (ids can be number or string)
   answeredQuestionIds: z.array(z.union([z.number(), z.string()])),
@@ -91,12 +97,20 @@ export const persistedGameStateSchema = z.object({
 })
 .superRefine((s, ctx) => {
   if (s.roundsWon > s.roundsToWin) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'roundsWon cannot exceed roundsToWin', path: ['roundsWon'] });
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'roundsWon cannot exceed roundsToWin',
+      path: ['roundsWon'],
+    });
   }
   // Only one fate slot at a time
   const slots = [s.currentFateCard, s.pendingFateCard, s.activeFateCard].filter(Boolean).length;
   if (slots > 1) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Only one fate card slot should be occupied', path: ['activeFateCard'] });
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Only one fate card slot should be occupied',
+      path: ['activeFateCard'],
+    });
   }
 });
 
