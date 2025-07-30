@@ -182,6 +182,91 @@ export const UI = (() => {
     pCount = 1; if (flavor) flavor.hidden = true; updatePDisp(); updateScreen('WAITING_ROOM');
   };
 
+  /* ───── Coach overlay (render-only; tutorialEngine owns the script) ───── */
+  let _lastCoachArgs = null;
+
+  // Patched: reveal overlay for measurement, then position on next frame.
+  function showCoach(args = {}) {
+    _lastCoachArgs = args;
+    const { text, anchor, placement = 'right' } = args;
+
+    const overlay = document.getElementById('coach-overlay');
+    const callout = document.getElementById('coach-callout');
+    const content = document.getElementById('coach-text');
+    if (!overlay || !callout || !content) return;
+
+    content.textContent = text || '';
+
+    // Make overlay participate in layout so offsetWidth/Height are real
+    overlay.hidden = false;
+    const prevVis = callout.style.visibility;
+    callout.style.visibility = 'hidden';
+
+    // Highlight target for focus ring
+    if (anchor && anchor.getBoundingClientRect) {
+      anchor.classList.add('coach-highlight');
+    }
+
+    requestAnimationFrame(() => {
+      const vpW = window.innerWidth, vpH = window.innerHeight;
+      let top = vpH * 0.5 - callout.offsetHeight * 0.5;
+      let left = vpW * 0.5 - callout.offsetWidth * 0.5;
+
+      if (anchor && anchor.getBoundingClientRect) {
+        const r = anchor.getBoundingClientRect();
+        const pad = 12;
+        switch (placement) {
+          case 'left':
+            top  = Math.max(16, r.top + window.scrollY);
+            left = Math.max(16, r.left + window.scrollX - callout.offsetWidth - pad);
+            break;
+          case 'bottom':
+            top  = r.bottom + window.scrollY + pad;
+            left = Math.max(16, r.left + window.scrollX);
+            break;
+          case 'top':
+            top  = Math.max(16, r.top + window.scrollY - callout.offsetHeight - pad);
+            left = Math.max(16, r.left + window.scrollX);
+            break;
+          case 'right':
+          default:
+            top  = Math.max(16, r.top + window.scrollY);
+            left = r.right + window.scrollX + pad;
+            break;
+        }
+      }
+
+      callout.style.top = `${top}px`;
+      callout.style.left = `${left}px`;
+      callout.style.visibility = prevVis || 'visible';
+    });
+  }
+
+  function hideCoach({ clearAnchor = true } = {}) {
+    _lastCoachArgs = null;
+    const overlay = document.getElementById('coach-overlay');
+    if (overlay) overlay.hidden = true;
+    if (clearAnchor) {
+      document.querySelectorAll('.coach-highlight')
+        .forEach(el => el.classList.remove('coach-highlight'));
+    }
+  }
+
+  /** Allow tutorialEngine to hook UI buttons */
+  function bindCoachHandlers({ onNext, onSkip } = {}) {
+    const next = document.getElementById('coach-next');
+    const skip = document.getElementById('coach-skip');
+    if (next) next.onclick = (e) => { e.preventDefault(); onNext && onNext(); };
+    if (skip) skip.onclick = (e) => { e.preventDefault(); onSkip && onSkip(); };
+  }
+
+  // Keep the callout aligned on resize/orientation changes
+  window.addEventListener('resize', () => {
+    const overlay = document.getElementById('coach-overlay');
+    if (!overlay || overlay.hidden || !_lastCoachArgs) return;
+    showCoach(_lastCoachArgs);
+  });
+
   return {
     /* router hooks */
     setButtonLabels,
@@ -205,6 +290,11 @@ export const UI = (() => {
     adjustParticipantCount,
     getParticipantCount: () => pCount,
     confirmParticipants,
+
+    /* coach overlay (controlled by tutorialEngine) */
+    showCoach,
+    hideCoach,
+    bindCoachHandlers,
   };
 })();
 
