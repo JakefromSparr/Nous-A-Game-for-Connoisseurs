@@ -4,10 +4,10 @@ import { ROUTES }  from './constants/routes.js';
 import { State }   from './state.js';
 import { UI }      from './ui.js';
 
-import * as Q        from './engine/questionEngine.js';
-import * as Fate     from './engine/fateEngine.js';
-import * as Round    from './engine/roundEngine.js';
-import * as Tutorial from './engine/tutorialEngine.js'; // assumed present
+import * as Q       from './engine/questionEngine.js';
+import * as Fate    from './engine/fateEngine.js';
+import * as Round   from './engine/roundEngine.js';
+import * as Tutor   from './engine/tutorialEngine.js';  // <-- NEW
 
 /* ---------------- helpers ---------------- */
 
@@ -17,7 +17,7 @@ function renderScreenBody(target, st) {
   }
   if (target === SCREENS.FATE && st.activeFateCard) {
     UI.showFateCard(st.activeFateCard);
-    UI.showFateChoicesFromState(st); // show on-card labels too
+    UI.showFateChoicesFromState(st);
   }
   if (target === SCREENS.REVEAL && st.lastOutcome) {
     UI.showResult(st.lastOutcome);
@@ -40,12 +40,10 @@ function applyResult({ patch, next } = {}) {
   const labels = cfg.labels.map(l => (typeof l === 'function' ? l(st) : l));
 
   UI.setButtonLabels(labels, (i) => {
-    if (cfg.actions[i] === null) return true; // taunt/disabled
+    if (cfg.actions[i] === null) return true;
 
-    // Fate screen: disable missing choices
     if (target === SCREENS.FATE && st.fateChoices[i] == null) return true;
 
-    // Game Lobby: center disabled once a fate is already loaded for this round
     if (target === SCREENS.GAME_LOBBY && i === 1) {
       const loaded = Array.isArray(st.activeRoundEffects) && st.activeRoundEffects.length > 0;
       return loaded;
@@ -58,16 +56,18 @@ function applyResult({ patch, next } = {}) {
   State.saveGame?.();
 }
 
-// Pull baseline cost (−1 thread) then draw a question
+// Pull baseline cost then draw a question (tutorial uses tier:0)
 function doPull() {
   const s = State.getState();
   if (s.thread <= 0) return { next: SCREENS.ROUND_LOBBY };
 
   const afterPull = s.thread - 1;
-  const { question, answers, category } = Q.drawQuestion(s);
+
+  // Tutorial draw (tier 0 only)
+  const draw = s.tutorial?.active ? Tutor.drawTutorialQuestion : Q.drawQuestion;
+  const { question, answers, category } = draw(s);
 
   if (!question) {
-    // deck/tier exhausted → stay in lobby
     return { patch: { thread: afterPull }, next: SCREENS.ROUND_LOBBY };
   }
 
@@ -82,20 +82,19 @@ function doPull() {
   };
 }
 
-// After REVEAL: decide where to go (Sever? → sever screen, else back to Round Lobby)
-// Also handle natural difficulty ramp here (we now know the last outcome).
+// After REVEAL: decide where to go
 function afterRevealAccept() {
   const s = State.getState();
-
-  // 1) Difficulty ramp based on the last answer outcome
-  const kind = s.lastOutcome?.kind;
-  if (kind) State.noteAnswerOutcome(kind);
-
-  // 2) End-of-thread handling
   if (s.thread <= 0) {
     const patch = Round.sever(s);
     return { patch, next: SCREENS.THREAD_SEVERED };
   }
+
+  // OPTIONAL: advance tutorial step after any reveal
+  if (s.tutorial?.active) {
+    Tutor.advanceStep();
+  }
+
   return { next: SCREENS.ROUND_LOBBY };
 }
 
@@ -106,28 +105,30 @@ const ACTIONS = {
   'welcome-up'      : () => (UI.moveWelcomeSelection('up'),  {}),
   'welcome-down'    : () => (UI.moveWelcomeSelection('down'),{}),
   'welcome-select'  : () => {
-    const choice = (UI.getWelcomeSelection() || '').toLowerCase();
-    if (choice === 'play')     return { next: SCREENS.WAITING_ROOM };
-    if (choice === 'rules')    return { next: SCREENS.RULES };
-    if (choice === 'options')  return { next: SCREENS.OPTIONS };
-    if (choice === 'tutorial') return { next: SCREENS.TUTORIAL };
-    if (choice === 'reset save') {
-      State.clearSave();
+    const choice = UI.getWelcomeSelection();
+
+    if (choice === 'Play')     return { next: SCREENS.WAITING_ROOM };
+    if (choice === 'Rules')    return { next: SCREENS.RULES };
+    if (choice === 'Options')  return { next: SCREENS.OPTIONS };
+
+    if (choice === 'Tutorial') {
+      Tutor.startTutorial?.();
+      return { next: SCREENS.GAME_LOBBY };
+    }
+
+    if (choice === 'Reset Save') {
+      State.resetSave?.();
+      // Drop back cleanly to Welcome; tutorial flag is non-persistent
       return { next: SCREENS.WELCOME };
     }
+
     return {};
   },
   'back-to-welcome' : () => ({ next: SCREENS.WELCOME }),
   'rules-more'      : () => ({}),
-
-  // Options: left is Back, center Confirm (noop for now), right cycles difficulty 1→3
-  'options-select'            : () => ({}),
-  'options-next-difficulty'   : () => {
-    const s = State.getState();
-    const next = (s.startingDifficulty % 3) + 1;  // 1→2→3→1
-    State.setStartingDifficulty(next);
-    return {}; // UI reads from state
-  },
+  'options-down'    : () => (UI.moveOptions?.('down'),{}),
+  'options-up'      : () => (UI.moveOptions?.('up'),  {}),
+  'options-select'  : () => (UI.selectOption?.(),     {}),
 
   /* WAITING ROOM */
   'participants-down': () => (UI.adjustParticipantCount(-1), {}),
@@ -138,36 +139,23 @@ const ACTIONS = {
     return { next: SCREENS.GAME_LOBBY };
   },
 
-  /* TUTORIAL LANDING */
-  'tutorial-begin' : () => {
-    const res = (Tutorial?.begin && Tutorial.begin(State.getState())) || null;
-    return res || { next: SCREENS.QUESTION };
-  },
-  'tutorial-more'  : () => {
-    const res = (Tutorial?.more && Tutorial.more(State.getState())) || null;
-    return res || {};
-  },
-
   /* GAME LOBBY */
-  // Tempt Fate: only if nothing already loaded for this round
   'tempt-fate' : () => {
     const s = State.getState();
     const alreadyLoaded = Array.isArray(s.activeRoundEffects) && s.activeRoundEffects.length > 0;
-    if (alreadyLoaded) return {}; // disabled by UI, but guard anyway
+    if (alreadyLoaded) return {};
 
     const deck = s.fateCardDeck || [];
     const available = deck.filter(c => !s.completedFateCardIds?.has?.(c.id));
     const card = available.length ? available[(Math.random() * available.length) | 0] : null;
-    if (!card) return {}; // no cards left
-
+    if (!card) return {};
     const patch = Fate.armFate(card, s);
     return { patch, next: SCREENS.FATE };
   },
-  // legacy name if an old route still references it
   'enter-fate' : () => ACTIONS['tempt-fate'](),
 
   'to-round-lobby' : () => {
-    const patch = Round.startRound(State.getState()); // applies ROUND_START bonuses too
+    const patch = Round.startRound(State.getState());
     return { patch, next: SCREENS.ROUND_LOBBY };
   },
 
@@ -182,7 +170,7 @@ const ACTIONS = {
   },
   'pull'    : () => doPull(),
 
-  /* QUESTION (answers 0/1/2) */
+  /* QUESTION */
   'choose-0': () => {
     const res = Q.evaluate(0, State.getState());
     return { patch: res?.patch, next: SCREENS.REVEAL };
@@ -200,7 +188,7 @@ const ACTIONS = {
   'reveal-fight'  : () => afterRevealAccept(),
   'reveal-accept' : () => afterRevealAccept(),
 
-  /* FATE (choose a pre-round effect; then return to Game Lobby) */
+  /* FATE */
   'fate-choose-0' : () => {
     const s = State.getState();
     const choice = s.fateChoices[0];
@@ -226,7 +214,7 @@ const ACTIONS = {
     return { patch, next: SCREENS.GAME_LOBBY };
   },
 
-  /* FATE RESULT — end-of-round only */
+  /* FATE RESULT */
   'fate-fight'  : () => ({ next: SCREENS.ROUND_LOBBY }),
   'fate-accept' : () => {
     const s = State.getState();
@@ -267,9 +255,8 @@ export function handleAction(btnIndex) {
     console.warn(`No action for button ${btnIndex} on ${state.currentScreen}`);
     return;
   }
-  if (action === null) return; // deliberate taunt
+  if (action === null) return;
 
-  // guard on FATE
   if (state.currentScreen === SCREENS.FATE && state.fateChoices[btnIndex] == null) return;
 
   const fn = ACTIONS[action];
