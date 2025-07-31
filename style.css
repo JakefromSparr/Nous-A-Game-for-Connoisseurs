@@ -293,25 +293,39 @@ p, li {
     scroll-behavior: auto !important;
   }
 }
-/* ---- Tutorial / Coach overlay ---- */
+/* ===== Tutorial / Coach Overlay System ===== */
+
+/* The full-screen dimming and blur layer. It sits behind everything else. */
 .coach-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,.55);
-  backdrop-filter: blur(1px);
-  z-index: 1000;
-  pointer-events: none; /* let users click underlying UI unless callout is under pointer */
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(3px);
+  z-index: 999; /* Sits above normal UI, but below the highlight. */
 }
 
+/* Add this class to the element you want to highlight. */
+.coach-highlight {
+  position: relative; /* This is crucial for z-index to work! */
+  z-index: 1000;      /* Lifts the element above the blur/dim overlay. */
+  outline: 3px solid var(--gold-foil-light);
+  box-shadow:
+    0 0 0 6px rgba(245, 228, 194, 0.15),
+    0 0 25px 5px var(--gold-foil-light);
+  border-radius: 12px; /* Adjust as needed to match the element shape. */
+}
+
+/* The text box that explains the highlighted element. */
 .coach-callout {
   position: absolute;
+  z-index: 1100; /* Sits on top of everything. */
+  
   max-width: 440px;
   background: #0c0b0a;
   border: 1px solid var(--gold-foil-dark);
   border-radius: 14px;
   padding: 1rem 1.25rem;
   box-shadow: 0 8px 30px rgba(0,0,0,.55);
-  pointer-events: auto; /* the callout itself is clickable */
 }
 
 .coach-callout p {
@@ -339,13 +353,4 @@ p, li {
 
 .coach-controls button:hover {
   box-shadow: 0 0 12px rgba(245, 228, 194, 0.2);
-}
-
-.coach-highlight {
-  outline: 3px solid var(--gold-foil-light);
-  box-shadow:
-    0 0 0 6px rgba(245, 228, 194, 0.15),
-    0 0 18px var(--gold-foil-light);
-  border-radius: 12px;
-  transition: box-shadow .2s ease;
 }
