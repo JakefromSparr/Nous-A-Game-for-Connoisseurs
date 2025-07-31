@@ -3,25 +3,50 @@ import { State } from '../state.js';
 import { UI }    from '../ui.js';
 import { COACH_STEPS } from '../constants/tutorialSteps.js'; // pull your steps array into its own file
 
+// src/engine/tutorialEngine.js
+import { State }     from '../state.js';
+import { UI }        from '../ui.js';
+import { SCREENS }   from '../constants/screens.js';
+
 let _coachIndex = 0;
 let _running    = false;
 
-function _showStep() {
+// Display the current step (assumes UI is already on the step.screen)
+function _displayStep() {
   const step = COACH_STEPS[_coachIndex];
   if (!step) return _end();
 
-  const anchorEl = document.getElementById(step.anchorId);
+  // highlight target
+  const anchor = document.getElementById(step.anchorId);
+  UI.hideCoach({ clearAnchor: true });
   UI.showCoach({
     text:      step.text,
-    anchor:    anchorEl || undefined,
+    anchor:    anchor || undefined,
     placement: step.placement,
   });
 }
 
+// Advance to next step, possibly switching screens
 function _onNext() {
-  UI.hideCoach();
-  _coachIndex += 1;
-  _showStep();
+  const prev    = COACH_STEPS[_coachIndex];
+  _coachIndex++;
+  const next    = COACH_STEPS[_coachIndex];
+
+  if (!next) {
+    UI.hideCoach();
+    return _end();
+  }
+
+  // If we need to switch screens:
+  if (next.screen && next.screen !== prev.screen) {
+    UI.hideCoach();
+    State.patch({ currentScreen: next.screen });
+    UI.updateScreen(next.screen);
+    // wait for your 0.7s fade-in
+    setTimeout(_displayStep, 750);
+  } else {
+    _displayStep();
+  }
 }
 
 function _onSkip() {
@@ -34,6 +59,7 @@ function _end() {
   State.patch({ tutorial: { active: false, step: 0, lastQ: null } });
 }
 
+// Public API
 export function startTutorial() {
   if (_running) return;
   _running    = true;
@@ -42,48 +68,15 @@ export function startTutorial() {
   State.patch({ tutorial: { active: true, step: 0, lastQ: null } });
   UI.bindCoachHandlers({ onNext: _onNext, onSkip: _onSkip });
 
-  // slight delay so DOM is ready
-  setTimeout(_showStep, 0);
+  // go to first step's screen
+  const first = COACH_STEPS[0];
+  State.patch({ currentScreen: first.screen });
+  UI.updateScreen(first.screen);
+
+  // slight delay to let the screen render
+  setTimeout(_displayStep, 750);
 }
 
 export function endTutorial() {
   _end();
-}
-
-export function advanceStep() {
-  const s   = State.getState();
-  const cur = s.tutorial?.step ?? 0;
-  State.patch({ tutorial: { ...(s.tutorial || {}), step: cur + 1 } });
-}
-
-// ------------------------------------------------------------------
-// Legacy tutorial question logic (if you still need it below)
-
-const TUTORIAL_IDS = ['TUT001', 'TUT002'];
-
-export function drawTutorialQuestion(state) {
-  const deck     = state.questionDeck || [];
-  const answered = state.answeredQuestionIds || new Set();
-  const step     = state.tutorial?.step ?? 0;
-
-  const tutPool = deck.filter(
-    q => q.tier === 0 && TUTORIAL_IDS.includes(String(q.id))
-  );
-  if (!tutPool.length) return { question: null, answers: [], category: '' };
-
-  const preferredId = TUTORIAL_IDS[Math.min(step, TUTORIAL_IDS.length - 1)];
-  let q =
-    tutPool.find(q => String(q.id) === preferredId && !answered.has(q.id)) ||
-    tutPool.find(q => !answered.has(q.id)) ||
-    tutPool[0];
-
-  const keys = ['A', 'B', 'C'];
-  const answers = (q.answers || []).slice(0,3).map((a,i) => ({
-    key:         keys[i],
-    label:       a.label,
-    answerClass: a.answerClass,
-    explanation: a.explanation,
-  }));
-
-  return { question: q, answers, category: q.category || q.title || '' };
 }
