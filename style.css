@@ -293,3 +293,59 @@ p, li {
     scroll-behavior: auto !important;
   }
 }
+/* ---- Tutorial / Coach overlay ---- */
+.coach-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  backdrop-filter: blur(1px);
+  z-index: 1000;
+  pointer-events: none; /* let users click underlying UI unless callout is under pointer */
+}
+
+.coach-callout {
+  position: absolute;
+  max-width: 440px;
+  background: #0c0b0a;
+  border: 1px solid var(--gold-foil-dark);
+  border-radius: 14px;
+  padding: 1rem 1.25rem;
+  box-shadow: 0 8px 30px rgba(0,0,0,.55);
+  pointer-events: auto; /* the callout itself is clickable */
+}
+
+.coach-callout p {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.5;
+}
+
+.coach-controls {
+  display: flex;
+  gap: .5rem;
+  justify-content: flex-end;
+  margin-top: .75rem;
+}
+
+.coach-controls button {
+  font-family: var(--body-font);
+  font-size: .95rem;
+  padding: .45rem .8rem;
+  background: #1a120b;
+  border: 1px solid var(--gold-foil-dark);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.coach-controls button:hover {
+  box-shadow: 0 0 12px rgba(245, 228, 194, 0.2);
+}
+
+.coach-highlight {
+  outline: 3px solid var(--gold-foil-light);
+  box-shadow:
+    0 0 0 6px rgba(245, 228, 194, 0.15),
+    0 0 18px var(--gold-foil-light);
+  border-radius: 12px;
+  transition: box-shadow .2s ease;
+}
