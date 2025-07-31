@@ -10,14 +10,18 @@ import { State } from '../state.js';
 
 const TUTORIAL_IDS = ['TUT001', 'TUT002'];
 
-/** Start tutorial mode (non-persistent; saved state strips it) */
 export function startTutorial() {
   const s = State.getState();
-  State.patch({
-    tutorial: { active: true, step: 0, lastQ: null },
-    // land in GAME_LOBBY per current flow; handleAction already sets the screen
-    // keep decks & answered IDs intact
-  });
+  State.patch({ tutorial: { ...(s.tutorial || {}), active: true, step: 0, lastQ: null } });
+  // show first hint
+  if (typeof window !== 'undefined' && window.UI) {
+    const anchor = document.getElementById('controller');
+    window.UI.bindCoachHandlers({
+      onNext: () => window.UI.hideCoach() /* you can swap this for your real step-advance */,
+      onSkip: () => window.UI.hideCoach(),
+    });
+    window.UI.showCoach({ text: 'These three buttons are all you need. The labels change.', anchor, placement: 'top' });
+  }
 }
 
 /** End tutorial mode */
