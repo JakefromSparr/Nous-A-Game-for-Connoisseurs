@@ -1,12 +1,8 @@
 // src/engine/tutorialEngine.js
-import { State } from '../state.js';
-import { UI }    from '../ui.js';
-import { COACH_STEPS } from '../constants/tutorialSteps.js'; // pull your steps array into its own file
-
-// src/engine/tutorialEngine.js
 import { State }     from '../state.js';
 import { UI }        from '../ui.js';
 import { SCREENS }   from '../constants/screens.js';
+import { COACH_STEPS } from '../constants/tutorialSteps.js';
 
 let _coachIndex = 0;
 let _running    = false;
