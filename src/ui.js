@@ -100,14 +100,16 @@ export const UI = (() => {
     if ('roundScore' in data) updateText('round-score', data.roundScore);
     if ('roundNumber' in data) updateText('round-number-display', data.roundNumber);
     if ('currentCategory' in data) updateText('category-hint', data.currentCategory || '[Faded Ink]');
-
     if ('activeRoundEffects' in data && Array.isArray(data.activeRoundEffects)) {
-      const titles = data.activeRoundEffects.map((e) => e.cardTitle).filter(Boolean);
-      const divTxt = $('divinations-text') || document.querySelector('#divinations-display p');
-      if (divTxt) divTxt.textContent = titles.length ? titles.join(', ') : '[None]';
-    }
+  const titles = data.activeRoundEffects.map((e) => e.cardTitle).filter(Boolean);
+  const text = titles.length ? titles.join(', ') : '[None]';
+  const lobby = document.getElementById('divinations-text');
+  if (lobby) lobby.textContent = text;
+  const round = document.getElementById('divinations-text-round');
+  if (round) round.textContent = text;
+}
   }
-
+  
   // Flexible: works with (q,answers[]) OR legacy q.choices.{A,B,C}
   function showQuestion(q, answers) {
     const title = q?.title || q?.category || '';
