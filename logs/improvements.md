@@ -3,3 +3,4 @@
 - Added schema validation for loading and saving game state
 - Added devSuite folder with Node, Vite, Zod, and Jest tooling
 - Fixed tutorial imports and restored drawTutorialQuestion
+- Enabled tier escalation and deck refresh with memory-based answer blocking

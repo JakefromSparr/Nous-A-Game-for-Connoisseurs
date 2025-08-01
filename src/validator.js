@@ -67,6 +67,7 @@ export const persistedGameStateSchema = z.object({
   // Sets are stored as arrays (ids can be number or string)
   answeredQuestionIds: z.array(z.union([z.number(), z.string()])),
   completedFateCardIds: z.array(z.union([z.number(), z.string()])),
+  questionHistory: z.record(z.string(), z.string()).default({}),
 
   activeRoundEffects: z.array(ActiveRoundEffect),
   activePowerUps: z.array(z.string()),
