@@ -76,3 +76,37 @@ export function startTutorial() {
 export function endTutorial() {
   _end();
 }
+
+export { advanceStep } from '../constants/tutorialSteps.js';
+
+// ------------------------------------------------------------------
+// Legacy tutorial question logic (Tier 0 cards)
+
+const TUTORIAL_IDS = ['TUT001', 'TUT002'];
+
+export function drawTutorialQuestion(state) {
+  const deck     = state.questionDeck || [];
+  const answered = state.answeredQuestionIds || new Set();
+  const step     = state.tutorial?.step ?? 0;
+
+  const tutPool = deck.filter(
+    q => q.tier === 0 && TUTORIAL_IDS.includes(String(q.id))
+  );
+  if (!tutPool.length) return { question: null, answers: [], category: '' };
+
+  const preferredId = TUTORIAL_IDS[Math.min(step, TUTORIAL_IDS.length - 1)];
+  let q =
+    tutPool.find(q => String(q.id) === preferredId && !answered.has(q.id)) ||
+    tutPool.find(q => !answered.has(q.id)) ||
+    tutPool[0];
+
+  const keys = ['A', 'B', 'C'];
+  const answers = (q.answers || []).slice(0, 3).map((a, i) => ({
+    key:         keys[i],
+    label:       a.label,
+    answerClass: a.answerClass,
+    explanation: a.explanation,
+  }));
+
+  return { question: q, answers, category: q.category || q.title || '' };
+}

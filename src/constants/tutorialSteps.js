@@ -1,4 +1,5 @@
 import { SCREENS }   from '../constants/screens.js';
+import { State }     from '../state.js';
 
 /** Advance tutorial step (call after a reveal accept if you like) */
 export function advanceStep() {
