@@ -41,6 +41,7 @@ let gameState = {
   questionDeck: [],
   answeredQuestionIds: new Set(),
   completedFateCardIds: new Set(),
+  questionHistory: {},
 
   // Fate state
   activeRoundEffects: [],
@@ -145,6 +146,7 @@ function initializeGame(participants = 1) {
 
     answeredQuestionIds: new Set(),
     completedFateCardIds: new Set(),
+    questionHistory: {},
 
     activeRoundEffects: [],
     activePowerUps: [],

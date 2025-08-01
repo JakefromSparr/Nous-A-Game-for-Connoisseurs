@@ -22,14 +22,23 @@ function getKind(q, key) {
 
 /* ---------- Build shuffled A/B/C answers for UI ---------- */
 function buildAnswers(q) {
+  const S = State.getState();
+  const prev = S.questionHistory?.[String(q.id)];
   const shuffled = shuffle(q.answers || []);
   const keys = ['A', 'B', 'C'];
-  return shuffled.slice(0, 3).map((a, i) => ({
-    key: keys[i],
-    label: a.label ?? '',
-    answerClass: String(a.answerClass || '').toUpperCase(), // TYPICAL/REVELATORY/WRONG
-    explanation: a.explanation ?? '',
-  }));
+  return shuffled.slice(0, 3).map((a, i) => {
+    let label = a.label ?? '';
+    let cls   = String(a.answerClass || '').toUpperCase();
+    let expl  = a.explanation ?? '';
+
+    if (prev && label === prev) {
+      label = 'We heard you the first time.';
+      cls   = 'WRONG';
+      expl  = '';
+    }
+
+    return { key: keys[i], label, answerClass: cls, explanation: expl };
+  });
 }
 
 /* ---------- Trait application per answer ---------- */
@@ -58,30 +67,35 @@ function applyTraitDelta(questionId, kindUpper) {
 export function drawQuestion(_state) {
   const S = State.getState();
   const deck = S.questionDeck || [];
-  const answered = S.answeredQuestionIds || new Set();
+  let answered = S.answeredQuestionIds || new Set();
 
-  // **Key change**: use current unlocked difficulty to gate tiers.
-  const activeTier = Math.max(1, Math.min(S.difficultyLevel || 1, 7));
+  const maxTier = 7;
+  let tier = Math.max(1, Math.min(S.difficultyLevel || 1, maxTier));
 
-  // Valid, unanswered, <= activeTier, and has 3+ answers
-  const pool = deck.filter(q =>
-    !answered.has(q.id) &&
-    (!q.tier || q.tier <= activeTier) &&
-    Array.isArray(q.answers) && q.answers.length >= 3
-  );
-
-  let q = pool.length ? pool[(Math.random() * pool.length) | 0] : null;
-
-  // Optional: allow repeats when exhausted (for demo resilience)
-  if (!q && ALLOW_REPEATS_WHEN_EXHAUSTED) {
-    const repeatPool = deck.filter(q =>
-      (!q.tier || q.tier <= activeTier) &&
-      Array.isArray(q.answers) && q.answers.length >= 3
+  const validPool = (t) =>
+    deck.filter(
+      (q) =>
+        !answered.has(q.id) &&
+        (!q.tier || q.tier <= t) &&
+        Array.isArray(q.answers) &&
+        q.answers.length >= 3
     );
-    q = repeatPool.length ? repeatPool[(Math.random() * repeatPool.length) | 0] : null;
+
+  let pool = validPool(tier);
+  while (pool.length === 0 && tier < maxTier) {
+    tier += 1;
+    pool = validPool(tier);
   }
 
-  if (!q) return { question: null, answers: [], category: '' };
+  if (pool.length === 0) {
+    // exhausted all tiers → refresh but keep history
+    answered = new Set();
+    State.patch({ answeredQuestionIds: answered });
+    pool = validPool(tier);
+    if (pool.length === 0) return { question: null, answers: [], category: '' };
+  }
+
+  const q = pool[(Math.random() * pool.length) | 0];
 
   return {
     question: q,
@@ -116,6 +130,13 @@ export function evaluate(choiceIndex, _state) {
 
   // Exhaust this question id
   S.answeredQuestionIds?.add?.(q.id);
+  // Remember chosen label for refresh logic
+  let historyPatch = null;
+  if (a.label) {
+    const hist = { ...(S.questionHistory || {}) };
+    hist[String(q.id)] = a.label;
+    historyPatch = hist;
+  }
 
   // Apply trait deltas
   applyTraitDelta(q.id, kind);
@@ -145,6 +166,22 @@ export function evaluate(choiceIndex, _state) {
       questionText: q.text || q.title || '',
     },
   };
+
+  if (historyPatch) {
+    patch.questionHistory = historyPatch;
+  }
+
+  if (isNotWrong) {
+    const count = (S.correctAnswersThisDifficulty || 0) + 1;
+    if (count >= 2) {
+      patch.difficultyLevel = Math.min((S.difficultyLevel || 1) + 1, 7);
+      patch.correctAnswersThisDifficulty = 0;
+    } else {
+      patch.correctAnswersThisDifficulty = count;
+    }
+  } else {
+    patch.correctAnswersThisDifficulty = S.correctAnswersThisDifficulty || 0;
+  }
 
   return { patch };
 }
