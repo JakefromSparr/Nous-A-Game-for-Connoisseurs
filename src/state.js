@@ -11,62 +11,66 @@ export const DEFAULTS = {
 
 const emptyTally = () => ({ A: 0, B: 0, C: 0 });
 
+function buildInitialState() {
+  return {
+    schemaVersion: 1,
+    currentScreen: SCREENS.WELCOME,
+
+    // Meta / progression
+    lives: 0,
+    score: 0,
+    roundsToWin: DEFAULTS.roundsToWin,
+    roundsWon: 0,
+    roundNumber: 1,
+
+    // Round runtime
+    roundScore: 0,
+    notWrongCount: 0,
+    thread: 0,
+    nextRoundT0: DEFAULTS.baseT0,
+    weavePrimed: false,
+    pendingBank: 0,
+
+    // Difficulty / gating (game chooses tiers <= difficultyLevel)
+    audacity: 0,
+    difficultyLevel: 1,
+    correctAnswersThisDifficulty: 0,
+
+    // Decks / IDs
+    fateCardDeck: [],
+    questionDeck: [],
+    answeredQuestionIds: new Set(),
+    completedFateCardIds: new Set(),
+    questionHistory: {},
+
+    // Fate state
+    activeRoundEffects: [],
+    activePowerUps: [],
+    currentFateCard: null,
+    pendingFateCard: null,
+    activeFateCard: null,
+    fateChoices: [null, null, null],
+
+    // Question state
+    currentQuestion: null,
+    currentAnswers: [],
+    currentCategory: '',
+    roundAnswerTally: emptyTally(),
+
+    // Traits
+    traits: { X: 0, Y: 0, Z: 0 },
+
+    // Round summary
+    roundEndedBy: null,
+    roundWon: false,
+
+    // Tutorial (non-persistent; validator strips unknown keys on save)
+    tutorial: { active: false, step: 0, lastQ: null },
+  };
+}
+
 // ===== Canonical initial state =====
-let gameState = {
-  schemaVersion: 1,
-  currentScreen: SCREENS.WELCOME,
-
-  // Meta / progression
-  lives: 0,
-  score: 0,
-  roundsToWin: DEFAULTS.roundsToWin,
-  roundsWon: 0,
-  roundNumber: 1,
-
-  // Round runtime
-  roundScore: 0,
-  notWrongCount: 0,
-  thread: 0,
-  nextRoundT0: DEFAULTS.baseT0,
-  weavePrimed: false,
-  pendingBank: 0,
-
-  // Difficulty / gating (game chooses tiers <= difficultyLevel)
-  audacity: 0,
-  difficultyLevel: 1,
-  correctAnswersThisDifficulty: 0,
-
-  // Decks / IDs
-  fateCardDeck: [],
-  questionDeck: [],
-  answeredQuestionIds: new Set(),
-  completedFateCardIds: new Set(),
-  questionHistory: {},
-
-  // Fate state
-  activeRoundEffects: [],
-  activePowerUps: [],
-  currentFateCard: null,
-  pendingFateCard: null,
-  activeFateCard: null,
-  fateChoices: [null, null, null],
-
-  // Question state
-  currentQuestion: null,
-  currentAnswers: [],
-  currentCategory: '',
-  roundAnswerTally: emptyTally(),
-
-  // Traits
-  traits: { X: 0, Y: 0, Z: 0 },
-
-  // Round summary
-  roundEndedBy: null,
-  roundWon: false,
-
-  // Tutorial (non-persistent; validator strips unknown keys on save)
-  tutorial: { active: false, step: 0, lastQ: null },
-};
+let gameState = buildInitialState();
 
 // ===== CRUD helpers =====
 const patch = (partial = {}) => Object.assign(gameState, partial);
@@ -169,6 +173,10 @@ function initializeGame(participants = 1) {
   });
 }
 
+function resetGame() {
+  gameState = buildInitialState();
+}
+
 // Spend 1 thread in Round Lobby to prime double points for the next question
 function spendThreadToWeave() {
   if (gameState.thread <= 0 || gameState.weavePrimed) return false;
@@ -185,6 +193,7 @@ export const State = {
   // lifecycle
   loadData,
   initializeGame,
+  resetGame,
 
   // persistence
   saveGame,

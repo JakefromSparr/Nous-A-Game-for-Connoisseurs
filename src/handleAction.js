@@ -236,6 +236,11 @@ const ACTIONS = {
   'reading-a'   : () => ({}),
   'reading-b'   : () => ({}),
   'reading-c'   : () => ({}),
+  'reset-game'  : () => {
+    State.resetGame?.();
+    State.loadData?.();
+    return { next: SCREENS.WAITING_ROOM };
+  },
   'quit-game'   : () => ({ next: SCREENS.CREDITS }),
 };
 
