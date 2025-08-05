@@ -48,32 +48,32 @@ const questions = [
     ],
   },
   {
-    id: 'TUT002',
-    category: 'Body',
+    id: 'TUT003',
+    category: 'Mind',
     tier: 0,
-    title: 'Finders Key‑pers',
-    text: 'What has keys without doors?',
+    title: 'After Word',
+    text: 'In the alphabet, which letter comes after P?',
     answers: [
       {
-        label: 'A Piano',
+        label: 'Q',
         answerClass: 'TYPICAL',
         explanation:
-          'Eighty‑eight of them, if you’re lucky. But did you know there was another answer?',
+          'Correct. In the standard sequence, "Q" follows "P". But did you know there was another way to be right?',
       },
       {
-        label: 'A Keyboard',
+        label: 'H',
         answerClass: 'TYPICAL',
         explanation:
-          'QWERTY approved. But did you know there was another answer?',
+          'Correct. In the word "alphabet" itself, "h" follows "p". But did you know there was another way to be right?',
       },
       {
-        label: 'A Map Legend',
+        label: 'V',
         answerClass: 'REVELATORY',
         explanation:
-          'It’s the “key” to the symbols—no doors required. But did you know there was another answer?',
+          'Also correct. "V" does come after "P", just not immediately. See? Sometimes there are many right answers.',
       },
-    ],
-  },
+],
+      },
 
   // ─────────────────── Tier 1 ───────────────────
   {
@@ -580,6 +580,60 @@ const questions = [
         label: "What's behind me?",
         answerClass: 'WRONG',
         explanation: "Don't ask questions you don't want answered.",
+      },
+    ],
+  },
+{
+    id: 302,
+    category: 'Soul',
+    tier: 2,
+    title: 'Left Behind',
+    text: 'When you leave the past behind, what remains?',
+    answers: [
+      {
+        label: 'The future.',
+        answerClass: 'TYPICAL',
+        explanation:
+          'Of course. Once you’ve moved on, there is only what lies ahead.',
+      },
+      {
+        label: 'The past.',
+        answerClass: 'REVELATORY',
+        explanation:
+          'You may leave it if you wish, but it always remains exactly where you left it.',
+      },
+      {
+        label: 'Nothing.',
+        answerClass: 'WRONG',
+        explanation:
+          'There is always something. Always. Even if you wish there weren\'t.',
+      },
+    ],
+  },
+{
+    id: 303,
+    category: 'Body',
+    tier: 3,
+    title: 'Empty Lungs',
+    text: 'What makes up the majority of the air we breathe?',
+    answers: [
+      {
+        label: 'Nitrogen',
+        answerClass: 'TYPICAL',
+        explanation:
+          'The textbook answer. Correct, the air is roughly 78% nitrogen.',
+      },
+      {
+        label: 'Empty Space',
+        answerClass: 'REVELATORY',
+        explanation:
+          'A different kind of truth. On an atomic level, the vast majority of what we call "air" is the vacuum between particles.',
+      },
+      {
+        label: 'Oxygen',
+        answerClass: 'WRONG',
+        explanation:
+          'A common misconception. While vital for us, oxygen only makes up about 21% of the air.',
       },
     ],
   },
