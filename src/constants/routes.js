@@ -92,10 +92,10 @@ export const ROUTES = {
   [SCREENS.FINAL_READING]: {
     labels: [
       s => s.readingButtons?.[0] ?? 'A',
-      s => s.readingButtons?.[1] ?? 'B',
+      () => 'Play Again',
       s => s.readingButtons?.[2] ?? 'C',
     ],
-    actions: ['reading-a','reading-b','reading-c'],
+    actions: ['reading-a','reset-game','reading-c'],
   },
 
   [SCREENS.CREDITS]: {
