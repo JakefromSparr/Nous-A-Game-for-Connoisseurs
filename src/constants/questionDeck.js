@@ -224,7 +224,7 @@ const questions = [
         label: 'Twenty-Two',
         answerClass: 'REVELATORY',
         explanation:
-          "This lines up perfectly with what you were supposed to answer. When concatenated, the numerals '2' and '2' form 22.",
+          "Not everyone notices that path. When concatenated, the numerals '2' and '2' form 22.",
       },
       {
         label: 'Eight',
@@ -303,7 +303,7 @@ const questions = [
         label: 'Enter it.',
         answerClass: 'REVELATORY',
         explanation:
-          'Ah, the prerequisite. You cannot leave a room you were never in to begin with.',
+          'You cannot leave a room you were never in to begin with.',
       },
       {
         label: 'Imagine it.',
@@ -331,7 +331,7 @@ const questions = [
       {
         label: 'Twice each week.',
         answerClass: 'REVELATORY',
-        explanation: 'You say that every time. It has two official meanings.',
+        explanation: 'How interesting you would say that. It has two official meanings.',
       },
       {
         label: 'Whenever.',
@@ -381,7 +381,7 @@ const questions = [
           'His thought experiment inspired later interpretations about superposition.',
       },
       {
-        label: 'Critiqued Quantum Mechanics.',
+        label: 'Critiqued Quantum.',
         answerClass: 'REVELATORY',
         explanation:
           "Schrödinger's thought experiment was a critique of quantum mechanics, not an endorsement.",
@@ -435,16 +435,16 @@ const questions = [
           'The classic Roman solution. Pacify the masses with cheap comforts.',
       },
       {
-        label: 'They can’t revolt if they’re dead',
+        label: 'Kill them all',
         answerClass: 'REVELATORY',
         explanation:
-          'Well, you\'re not wrong. In terms of cold logic: an infallible solution.',
+          'Well, you\'re not wrong. They can\’t revolt if they\’re dead.',
       },
       {
         label: 'Give them cake',
         answerClass: 'WRONG',
         explanation:
-          "That's just a rumor. And famously bad advice. Incorrect.",
+          "That\'s just a rumor. And famously bad advice. Incorrect.",
       },
     ],
   },
@@ -637,6 +637,62 @@ const questions = [
       },
     ],
   },
+  // ─────────────────── Tier 4 ───────────────────
+{ 
+
+     id: 401, 
+     category: 'Body', 
+     tier: 4, 
+     title: 'The Dog Days', 
+     text: 'If you sort August, July, and June alphabetically, how many total days do they hold?', 
+     answers: [ 
+       { 
+         label: '92', 
+         answerClass: 'TYPICAL', 
+         explanation: 
+           'Nothing gets past you, 31 in both July and August, 30 in June.', 
+       }, 
+       { 
+         label: '91', 
+         answerClass: 'WRONG', 
+         explanation: 
+           'Did you forget July 31st or August 31st?.', 
+       }, 
+       { 
+         label: '7', 
+         answerClass: 'WRONG', 
+         explanation: 
+           'Oh no, you thought you were being clever again, didn't you?', 
+       }, 
+     ], 
+   },
+{ 
+     id: 402, 
+     category: 'Body', 
+     tier: 4, 
+     title: 'A Straight Shot', 
+     text: 'Which Country, after 1904, shares a border with the United States?', 
+     answers: [ 
+       { 
+         label: 'Russia', 
+         answerClass: 'TYPICAL', 
+         explanation: 
+           'Correct. The US and Russia share a maritime border across the Bering Strait.', 
+       }, 
+       { 
+         label: 'United Kingdom', 
+         answerClass: 'WRONG', 
+         explanation: 
+           'No, traveling three thousand miles over open water unfortunately does not count.', 
+       }, 
+       { 
+         label: 'Panama', 
+         answerClass: 'WRONG', 
+         explanation: 
+           'The canal did not move the country, unfortunately for you.', 
+       }, 
+     ], 
+   },
 ];
 
 export default questions;
