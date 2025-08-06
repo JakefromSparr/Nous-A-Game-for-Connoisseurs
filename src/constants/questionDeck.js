@@ -662,7 +662,7 @@ const questions = [
          label: '7', 
          answerClass: 'WRONG', 
          explanation: 
-           'Oh no, you thought you were being clever again, didn't you?', 
+           "Oh no, you thought you were being clever again, didn't you?", 
        }, 
      ], 
    },
