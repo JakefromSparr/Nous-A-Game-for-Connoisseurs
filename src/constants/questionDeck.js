@@ -693,6 +693,153 @@ const questions = [
        }, 
      ], 
    },
+  Ok, so I think this is the final set for tier 5:
+
+// ─────────────────── Tier 5 ───────────────────
+{
+  id: 501,
+  category: 'Mind',
+  tier: 5,
+  title: 'The Alexandria Question',
+  text: 'When the Library of Alexandria burned, what was truly lost?',
+  answers: [
+    {
+      label: 'Potential',
+      answerClass: 'REVELATORY',
+      explanation: 'Broken Promises — You’re right. All those missed opportunities, the paths not taken. The tragic loss of… well. You know.',
+    },
+    {
+      label: 'Burden',
+      answerClass: 'REVELATORY',
+      explanation: 'A Quiet Relief — Of course. Sometimes you have to burn it all down just to feel like you can breathe again. A necessary sacrifice.',
+    },
+    {
+      label: 'Nothing',
+      answerClass: 'REVELATORY',
+      explanation: 'An Imagined Loss — Exactly. How can you lose something you never really had? It was just a story, and now it\'s over.',
+    },
+  ],
+},
+{
+  id: 502,
+  category: 'Soul',
+  tier: 5,
+  title: 'The Theseus Question',
+  text: 'If Theseus replaced every single part of his ship while sailing across the ocean, is it still the same ship?',
+  answers: [
+    {
+      label: 'It Couldn’t Be',
+      answerClass: 'REVELATORY',
+      explanation: 'The Imposter — You see it clearly. A thing is what it’s made of. And you know the feeling of being a perfect copy of yourself.',
+    },
+    {
+      label: 'It Seems to Be',
+      answerClass: 'REVELATORY',
+      explanation: 'The Agreed-Upon Lie — It’s the story that matters, isn’t it? You’ve always known identity is a performance. The trick is not breaking character.',
+    },
+    {
+      label: 'It Has to Be',
+      answerClass: 'REVELATORY',
+      explanation: 'A Stubborn Ghost — Right. Because the alternative is unthinkable. You hold on to what it was, because without that, what’s left?',
+    },
+  ],
+},
+{
+  id: 503,
+  category: 'Body',
+  tier: 5,
+  title: 'The Fawcett Question',
+  text: 'Why didn’t Explorer Percy Fawcett return from his final search for a lost city in the Amazon?',
+  answers: [
+    {
+      label: 'He died',
+      answerClass: 'REVELATORY',
+      explanation: 'The Story Ends — Yes. Sometimes there\'s no mystery. The jungle just swallows you whole. A simple, brutal end to the adventure.',
+    },
+    {
+      label: 'He found it',
+      answerClass: 'REVELATORY',
+      explanation: 'The Destination — Of course. He got what he wanted. And when you find paradise, you don’t draw a map for others to follow.',
+    },
+    {
+      label: 'He hid',
+      answerClass: 'REVELATORY',
+      explanation: 'A Good Place to Hide — You get it. The goal was never to find the city. The goal was to disappear. And he finally did.',
+    },
+  ],
+},
+{
+  id: 504,
+  category: 'Soul',
+  tier: 5,
+  title: 'The Orpheus Question',
+  text: 'Orpheus was told not to look back, or he would lose her forever. Why did he turn around?',
+  answers: [
+    {
+      label: 'Doubt',
+      answerClass: 'REVELATORY',
+      explanation: 'A Failure of Faith — You understand. The silence behind him was too loud. It wasn’t the gods he doubted, it was himself.',
+    },
+    {
+      label: 'Need',
+      answerClass: 'REVELATORY',
+      explanation: 'An Unbearable Hope — Exactly. It wasn’t a choice. The hope of seeing her face was more powerful than the fear of losing her forever.',
+    },
+    {
+      label: 'Love',
+      answerClass: 'REVELATORY',
+      explanation: 'A Final Glance — Right. He knew he would lose her. But to see her one last time? It was worth an eternity of regret.',
+    },
+  ],
+},
+{
+  id: 505,
+  category: 'Mind',
+  tier: 5,
+  title: 'The Janus Question',
+  text: 'If Janus the god of doorways stood in front of you now, which way would they face?',
+  answers: [
+    {
+      label: 'Forward',
+      answerClass: 'REVELATORY',
+      explanation: 'What’s Coming — Of course. You’re always looking ahead, aren’t you? Bracing for what’s next, for better or for worse.',
+    },
+    {
+      label: 'Backward',
+      answerClass: 'REVELATORY',
+      explanation: 'What’s Done — You can’t help it. The past has a stronger pull. You’re always checking over your shoulder for what’s chasing you.',
+    },
+    {
+      label: 'The Side',
+      answerClass: 'REVELATORY',
+      explanation: 'The Escape Route — Interesting. You don’t want to face the future or the past. You’re looking for a way out of the hallway altogether.',
+    },
+  ],
+},
+{
+  id: 506,
+  category: 'Body',
+  tier: 5,
+  title: 'The Mirror Question',
+  text: 'In a dim room, if you stare at your own eyes in the mirror, what will happen to your face?',
+  answers: [
+    {
+      label: 'It Will Vanish',
+      answerClass: 'REVELATORY',
+      explanation: 'Absence Confirmed — Yes. And that’s the real horror. Not seeing something monstrous, but the sudden, cold realization that you weren’t there at all.',
+    },
+    {
+      label: 'It Will Distort',
+      answerClass: 'REVELATORY',
+      explanation: 'The Mask Slips — You’re right. The features shift, melt, become something else. For a moment, you weren’t sure it was your face looking back.',
+    },
+    {
+      label: 'It Will Be The Same',
+      answerClass: 'REVELATORY',
+      explanation: 'The Unblinking Eye — Exactly. Nothing changes. And you’re forced to stare at the one person you can never, ever escape.',
+    },
+  ],
+},
 ];
 
 export default questions;
