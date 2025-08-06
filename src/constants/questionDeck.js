@@ -48,32 +48,32 @@ const questions = [
     ],
   },
   {
-    id: 'TUT003',
-    category: 'Mind',
-    tier: 0,
-    title: 'After Word',
-    text: 'In the alphabet, which letter comes after P?',
-    answers: [
-      {
-        label: 'Q',
-        answerClass: 'TYPICAL',
-        explanation:
-          'Correct. In the standard sequence, "Q" follows "P". But did you know there was another way to be right?',
-      },
-      {
-        label: 'H',
-        answerClass: 'TYPICAL',
-        explanation:
-          'Correct. In the word "alphabet" itself, "h" follows "p". But did you know there was another way to be right?',
-      },
-      {
-        label: 'V',
-        answerClass: 'REVELATORY',
-        explanation:
-          'Also correct. "V" does come after "P", just not immediately. See? Sometimes there are many right answers.',
-      },
-],
-      },
+  id: 'TUT002',
+  category: 'Mind',
+  tier: 0,
+  title: 'After Word',
+  text: 'In the alphabet, which letter comes after P?',
+  answers: [
+    {
+      label: 'Q',
+      answerClass: 'TYPICAL',
+      explanation:
+        'Correct. In the standard sequence, "Q" follows "P". But did you know there was another way to be right?',
+    },
+    {
+      label: 'H',
+      answerClass: 'TYPICAL',
+      explanation:
+        'Correct. In the word "alphabet" itself, "h" follows "p". But did you know there was another way to be right?',
+    },
+    {
+      label: 'V',
+      answerClass: 'REVELATORY',
+      explanation:
+        'Also correct. "V" does come after "P", just not immediately. See? Sometimes there are many right answers.',
+    },
+  ],
+},
 
   // ─────────────────── Tier 1 ───────────────────
   {
@@ -438,13 +438,13 @@ const questions = [
         label: 'Neutralize the Threat',
         answerClass: 'REVELATORY',
         explanation:
-          'Well, you\'re not wrong. They can\’t revolt if they\’re dead.',
+          "Well, you're not wrong. They can’t revolt if they’re dead.",
       },
       {
         label: 'Give them cake',
         answerClass: 'WRONG',
         explanation:
-          "That\'s just a rumor. And famously bad advice. Incorrect.",
+          "That's just a rumor. And famously bad advice. Incorrect.",
       },
     ],
   },
@@ -586,7 +586,7 @@ const questions = [
 {
     id: 302,
     category: 'Soul',
-    tier: 2,
+    tier: 3,
     title: 'Left Behind',
     text: 'When you leave the past behind, what remains?',
     answers: [
