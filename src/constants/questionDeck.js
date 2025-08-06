@@ -43,7 +43,7 @@ const questions = [
         label: 'A Garbage Truck',
         answerClass: 'TYPICAL',
         explanation:
-          'Classic riddle reading: it rolls on wheels, and flies tend to follow. But did you know there was another answer?',
+          'Sure. It rolls on wheels, and flies tend to follow. But did you know there was another answer?',
       },
     ],
   },
@@ -146,7 +146,7 @@ const questions = [
         label: 'and',
         answerClass: 'REVELATORY',
         explanation:
-          "The answers you choose are forming a pattern. The word 'and' is between the numerals.",
+          "Your answers form a pattern. The word 'and' is between the numerals.",
       },
       {
         label: 'what',
@@ -166,19 +166,19 @@ const questions = [
         label: 'About Fifty',
         answerClass: 'TYPICAL',
         explanation:
-          'The way you answer is beginning to paint a picture. On average a person will have 50 such anniversaries in a modern lifespan.',
+          'The way you answer paints a picture. On average a person will have 50 such anniversaries in a modern lifespan.',
       },
       {
         label: 'One',
         answerClass: 'REVELATORY',
         explanation:
-          'Each of your answers reveals more about how you think. You are only born once; the rest are just parties.',
+          'Each answer reveals a little more. You are only born once; the rest are just parties.',
       },
       {
-        label: 'Depends on how many friends they have',
+        label: 'Up to their friends',
         answerClass: 'WRONG',
         explanation:
-          "A charming thought, but incorrect. Parties don't change the number of times you were born.",
+          "A charming thought. Parties don't change the number of times you were born.",
       },
     ],
   },
@@ -199,7 +199,7 @@ const questions = [
         label: 'Close them',
         answerClass: 'REVELATORY',
         explanation:
-          'The prediction stated this would be your answer. You cannot perform an action on something already in that state.',
+          'This was always your answer. You cannot perform an action on something already in that state.',
       },
       {
         label: 'Read',
@@ -244,7 +244,7 @@ const questions = [
         label: 'February',
         answerClass: 'TYPICAL',
         explanation:
-          'The one everyone remembers. February typically has exactly 28 days.',
+          'You would say that. February typically has exactly 28 days.',
       },
       {
         label: 'All of them',
@@ -381,7 +381,7 @@ const questions = [
           'His thought experiment inspired later interpretations about superposition.',
       },
       {
-        label: 'Critiqued Quantum.',
+        label: 'Critiqued Quantum Mechanics.',
         answerClass: 'REVELATORY',
         explanation:
           "Schrödinger's thought experiment was a critique of quantum mechanics, not an endorsement.",
@@ -435,7 +435,7 @@ const questions = [
           'The classic Roman solution. Pacify the masses with cheap comforts.',
       },
       {
-        label: 'Kill them all',
+        label: 'Neutralize the Threat',
         answerClass: 'REVELATORY',
         explanation:
           'Well, you\'re not wrong. They can\’t revolt if they\’re dead.',
@@ -693,7 +693,6 @@ const questions = [
        }, 
      ], 
    },
-  Ok, so I think this is the final set for tier 5:
 
 // ─────────────────── Tier 5 ───────────────────
 {
