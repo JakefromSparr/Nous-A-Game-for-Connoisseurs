@@ -130,4 +130,3 @@ function pickIntrusionLine(X, Y, Z, tally, c) {
   }
   return null;
 }
-
