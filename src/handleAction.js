@@ -131,13 +131,30 @@ const ACTIONS = {
   'options-select'  : () => (UI.selectOption?.(),     {}),
 
   /* WAITING ROOM */
-  'participants-down': () => (UI.adjustParticipantCount(-1), {}),
-  'participants-up'  : () => (UI.adjustParticipantCount(+1), {}),
-  'participants-confirm': () => {
-    const n = UI.confirmParticipants();
+'participants-down': () => {
+  UI.adjustParticipantCount(-1);
+  UI.hideParticipantFlavor?.(); // hide the eerie line if they tweak the count
+  return {};
+},
+'participants-up': () => {
+  UI.adjustParticipantCount(+1);
+  UI.hideParticipantFlavor?.();
+  return {};
+},
+'participants-confirm': () => {
+  const n = UI.confirmParticipants();   // now: pure; just returns number
+  UI.showParticipantFlavor?.(n);        // display the line AFTER confirm
+
+  // Linger for effect, then initialize and leave the room
+  setTimeout(() => {
     State.initializeGame(n);
-    return { next: SCREENS.GAME_LOBBY };
-  },
+    applyResult({ next: SCREENS.GAME_LOBBY }); // safe here; in-module
+  }, 900); // tweak 600–1200ms to taste
+
+  // Stay on WAITING_ROOM while the line shows
+  return {};
+},
+
 
   /* GAME LOBBY */
   'tempt-fate' : () => {
@@ -277,3 +294,4 @@ export function handleAction(btnIndex) {
 export function refreshUI() {
   applyResult({});
 }
+
