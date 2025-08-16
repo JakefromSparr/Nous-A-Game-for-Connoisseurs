@@ -5,6 +5,7 @@ import { OUTCOME, OUTCOME_EFFECT, WEAVE } from '../constants/answerLogic.js';
 import { TRAIT_LOADINGS } from '../constants/traitConfig.js';
 import { CLASS_TRAIT_BASE } from '../constants/answerLogic.js';
 import { ID_TO_GROUPS } from '../constants/questionGroups.js';
+import { applyTraitDelta } from './traitEngine.js';
 
 // Toggleable fallback: allow repeats if the tier pool is exhausted.
 const ALLOW_REPEATS_WHEN_EXHAUSTED = false;
@@ -227,3 +228,4 @@ export function evaluate(choiceIndex, _state) {
 
   return { patch };
 }
+
