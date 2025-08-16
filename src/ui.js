@@ -207,7 +207,7 @@ export const UI = (() => {
   // Patched: reveal overlay for measurement, then position on next frame.
   function showCoach(args = {}) {
     _lastCoachArgs = args;
-    const { text, anchor, placement = 'right' } = args;
+    const { text, anchor, placement = 'right', veil = 0.18, blur = 0 } = args;
 
     const overlay = document.getElementById('coach-overlay');
     const callout = document.getElementById('coach-callout');
@@ -217,7 +217,11 @@ export const UI = (() => {
     content.textContent = text || '';
 
     // Make overlay participate in layout so offsetWidth/Height are real
-    overlay.hidden = false;
+     overlay.hidden = false;
+     // Lighten the veil + remove heavy blur by default.
+     overlay.style.backgroundColor = `rgba(0,0,0,${Math.max(0, Math.min(1, veil))})`;
+     overlay.style.backdropFilter  = blur ? `blur(${blur}px)` : 'none';
+    
     const prevVis = callout.style.visibility;
     callout.style.visibility = 'hidden';
 
@@ -319,3 +323,4 @@ export const UI = (() => {
 })();
 
 if (typeof window !== 'undefined') window.UI = UI;
+
