@@ -62,7 +62,7 @@ export const UI = (() => {
   }
 
   /* ───── Controller labels/disabled states ─────
-     - labels: array of 3 strings
+     - labels: array of 3 strings or functions resolved by ROUTES
      - isDisabled: optional fn(index)->boolean for per-button disabled logic
   */
   function setButtonLabels(labels = ['', '', ''], isDisabled) {
@@ -101,15 +101,15 @@ export const UI = (() => {
     if ('roundNumber' in data) updateText('round-number-display', data.roundNumber);
     if ('currentCategory' in data) updateText('category-hint', data.currentCategory || '[Faded Ink]');
     if ('activeRoundEffects' in data && Array.isArray(data.activeRoundEffects)) {
-  const titles = data.activeRoundEffects.map((e) => e.cardTitle).filter(Boolean);
-  const text = titles.length ? titles.join(', ') : '[None]';
-  const lobby = document.getElementById('divinations-text');
-  if (lobby) lobby.textContent = text;
-  const round = document.getElementById('divinations-text-round');
-  if (round) round.textContent = text;
-}
+      const titles = data.activeRoundEffects.map((e) => e.cardTitle).filter(Boolean);
+      const text = titles.length ? titles.join(', ') : '[None]';
+      const lobby = document.getElementById('divinations-text');
+      if (lobby) lobby.textContent = text;
+      const round = document.getElementById('divinations-text-round');
+      if (round) round.textContent = text;
+    }
   }
-  
+
   // Flexible: works with (q,answers[]) OR legacy q.choices.{A,B,C}
   function showQuestion(q, answers) {
     const title = q?.title || q?.category || '';
@@ -166,22 +166,39 @@ export const UI = (() => {
     if (el) el.textContent = text ?? '';
   }
 
-  /* ───── Participants mini‑view ───── */
+  /* ───── Participants mini-view ───── */
   const countDisp = $('participant-count-display');
   const flavor    = $('participant-flavor');
   let   pCount    = 1;
 
   const updatePDisp = () => { if (countDisp) countDisp.textContent = pCount; };
-  const adjustParticipantCount = (d) => { pCount = Math.max(1, Math.min(20, pCount + d)); updatePDisp(); };
-  const confirmParticipants = () => {
+
+  // When the number changes, update the display and clear any spooky line
+  const adjustParticipantCount = (d) => {
+    pCount = Math.max(1, Math.min(20, pCount + d));
+    updatePDisp();
     if (flavor) {
-      flavor.textContent = `Strange... it looks like there are ${pCount + 1} of you here. Ah well.`;
-      flavor.hidden = false;
+      flavor.textContent = '';
+      flavor.hidden = true;
     }
-    return pCount;
   };
+
+  // PURE: just report the current count (no DOM writes)
+  const confirmParticipants = () => pCount;
+
+  // Called by handleAction AFTER confirmParticipants()
+  const showParticipantFlavor = (n) => {
+    if (!flavor) return;
+    const noun = n === 1 ? 'voice' : 'voices';
+    flavor.textContent = `Nous hears ${n} ${noun}. It prefers odd numbers.`;
+    flavor.hidden = false;
+  };
+
   const showParticipantEntry = () => {
-    pCount = 1; if (flavor) flavor.hidden = true; updatePDisp(); updateScreen('WAITING_ROOM');
+    pCount = 1;
+    updatePDisp();
+    if (flavor) { flavor.textContent = ''; flavor.hidden = true; }
+    updateScreen('WAITING_ROOM');
   };
 
   /* ───── Coach overlay (render-only; tutorialEngine owns the script) ───── */
@@ -291,7 +308,8 @@ export const UI = (() => {
     showParticipantEntry,
     adjustParticipantCount,
     getParticipantCount: () => pCount,
-    confirmParticipants,
+    confirmParticipants,     // now pure
+    showParticipantFlavor,   // new
 
     /* coach overlay (controlled by tutorialEngine) */
     showCoach,
