@@ -7,7 +7,7 @@ import { UI }      from './ui.js';
 import * as Q       from './engine/questionEngine.js';
 import * as Fate    from './engine/fateEngine.js';
 import * as Round   from './engine/roundEngine.js';
-import * as Tutor   from './engine/tutorialEngine.js';  // tutorial overlay engine
+import * as Tutor   from './engine/tutorialEngine.js';
 
 /* ---------------- helpers ---------------- */
 
@@ -23,7 +23,6 @@ function renderScreenBody(target, st) {
     UI.showResult(st.lastOutcome);
   }
   if (target === SCREENS.FATE_RESULT) {
-    // If we have a pending round summary, surface it to the UI.
     const summary = st.roundSummary;
     if (summary?.fateText) UI.showFateResult?.(summary.fateText);
   }
@@ -42,14 +41,21 @@ function applyResult({ patch, next } = {}) {
 
   const cfg = ROUTES[target] || { labels: ['','',''], actions: [null,null,null] };
   const st  = State.getState();
-  const labels = cfg.labels.map(l => (typeof l === 'function' ? l(st) : l));
+
+  // Tutorial override: show [Back, Next, Skip] while tutorial overlay is active.
+  let labels;
+  if (st.tutorial?.active) {
+    labels = ['Back','Next','Skip'];
+  } else {
+    labels = cfg.labels.map(l => (typeof l === 'function' ? l(st) : l));
+  }
 
   UI.setButtonLabels(labels, (i) => {
-    if (cfg.actions[i] === null) return true;
+    if (cfg.actions[i] === null && !st.tutorial?.active) return true;
 
-    if (target === SCREENS.FATE && st.fateChoices[i] == null) return true;
+    if (target === SCREENS.FATE && st.fateChoices[i] == null && !st.tutorial?.active) return true;
 
-    if (target === SCREENS.GAME_LOBBY && i === 1) {
+    if (target === SCREENS.GAME_LOBBY && i === 1 && !st.tutorial?.active) {
       const loaded = Array.isArray(st.activeRoundEffects) && st.activeRoundEffects.length > 0;
       return loaded;
     }
@@ -67,8 +73,6 @@ function doPull() {
   if (s.thread <= 0) return { next: SCREENS.ROUND_LOBBY };
 
   const afterPull = s.thread - 1;
-
-  // Tutorial draw (tier 0 only)
   const draw = s.tutorial?.active ? Tutor.drawTutorialQuestion : Q.drawQuestion;
   const { question, answers, category } = draw(s);
 
@@ -95,11 +99,9 @@ function afterRevealAccept() {
     return { patch, next: SCREENS.THREAD_SEVERED };
   }
 
-  // OPTIONAL: advance tutorial step after any reveal (if desired)
   if (s.tutorial?.active) {
     Tutor.advanceStep?.();
   }
-
   return { next: SCREENS.ROUND_LOBBY };
 }
 
@@ -117,30 +119,22 @@ const ACTIONS = {
     if (choice === 'Options')  return { next: SCREENS.OPTIONS };
 
     if (choice === 'Tutorial') {
-      Tutor.startTutorial?.();              // don't start a game yet; tutorial is modal
-      return { next: SCREENS.GAME_LOBBY };  // tutorial owns overlay/routing on top
+      // Go to the TUTORIAL screen you defined in ROUTES
+      return { next: SCREENS.TUTORIAL };
     }
 
     if (choice === 'Reset Save') {
       State.resetSave?.();
       return { next: SCREENS.WELCOME };
     }
-
     return {};
   },
   'back-to-welcome' : () => ({ next: SCREENS.WELCOME }),
 
-  /* RULES (no-ops for paging could be added) */
+  /* RULES */
   'rules-more'      : () => ({}),
 
-  /* OPTIONS — new actions */
-  'options-prev-difficulty' : () => {
-    const s = State.getState();
-    const cur = Math.max(1, Math.min(7, Number(s.difficultyLevel || 1)));
-    const next = cur <= 1 ? 7 : cur - 1;
-    State.patch({ difficultyLevel: next });
-    return {};
-  },
+  /* OPTIONS — matches your routes */
   'options-next-difficulty' : () => {
     const s = State.getState();
     const cur = Math.max(1, Math.min(7, Number(s.difficultyLevel || 1)));
@@ -150,18 +144,22 @@ const ACTIONS = {
   },
   'options-select' : () => ({ next: SCREENS.WELCOME }),
 
-  // Back-compat with older ROUTES (these map to new actions)
-  'options-down' : () => ACTIONS['options-next-difficulty'](),
-  'options-up'   : () => ACTIONS['options-prev-difficulty'](),
+  /* TUTORIAL SCREEN actions — matches your routes */
+  'tutorial-begin' : () => {
+    Tutor.startTutorial?.();            // overlay becomes active, buttons are gated
+    return { next: SCREENS.GAME_LOBBY };// start from lobby context; tutorial owns flow
+  },
+  'tutorial-more'  : () => {
+    Tutor.advanceStep?.();              // optional: step through preface text
+    return {};
+  },
 
   /* WAITING ROOM */
   'participants-down': () => (UI.adjustParticipantCount(-1), {}),
   'participants-up'  : () => (UI.adjustParticipantCount(+1), {}),
   'participants-confirm': () => {
-    const n = UI.confirmParticipants();  // now pure: only returns the count
-    UI.showParticipantFlavor?.(n);       // show the eerie line AFTER they confirm
+    const n = UI.confirmParticipants();   // shows the eerie line (impure in current UI)
 
-    // Linger for effect, then initialize and leave the room
     setTimeout(() => {
       State.initializeGame(n);
       applyResult({ next: SCREENS.GAME_LOBBY });
@@ -195,7 +193,7 @@ const ACTIONS = {
   'tie-off' : () => {
     const s = State.getState();
 
-    // Build a summary for the FATE_RESULT screen without finalizing yet.
+    // Build summary for the FATE_RESULT screen; do not finalize yet.
     const fateRes = Fate.resolveRound?.(s.roundAnswerTally, s.roundWon, s) || { summaryText: '' };
     const roundPoints = s.roundScore || 0;
 
@@ -205,7 +203,6 @@ const ACTIONS = {
       raw     : fateRes,
     };
 
-    // Stash for accept step; keep roundScore intact so UI can show it on FATE_RESULT
     const patch = {
       roundSummary: summary,
       pendingFateResolution: fateRes,
@@ -238,7 +235,7 @@ const ACTIONS = {
   'reveal-fight'  : () => afterRevealAccept(),
   'reveal-accept' : () => afterRevealAccept(),
 
-  /* FATE (card play during round) */
+  /* FATE (in-round card choices) */
   'fate-choose-0' : () => {
     const s = State.getState();
     const choice = s.fateChoices[0];
@@ -276,7 +273,7 @@ const ACTIONS = {
       ? SCREENS.FINAL_READING
       : SCREENS.GAME_LOBBY;
 
-    // Clean up summary so the next round starts fresh
+    // Clean up summary
     patch.roundSummary = null;
     patch.pendingFateResolution = null;
 
@@ -286,7 +283,7 @@ const ACTIONS = {
   /* THREAD SEVERED */
   'sever-ack'   : () => ({ next: SCREENS.GAME_LOBBY }),
 
-  /* META */
+  /* FINAL READING / META */
   'reading-a'   : () => ({}),
   'reading-b'   : () => ({}),
   'reading-c'   : () => ({}),
@@ -303,7 +300,7 @@ const ACTIONS = {
 export function handleAction(btnIndex) {
   const state = State.getState();
 
-  // Tutorial take-over: while active, the 3 buttons are Back, Next, Exit.
+  // Tutorial take-over: buttons are [Back, Next, Skip]
   if (state.tutorial?.active) {
     if (btnIndex === 0) {
       Tutor.prevStep?.();
@@ -312,7 +309,7 @@ export function handleAction(btnIndex) {
     } else if (btnIndex === 2) {
       Tutor.endTutorial?.();
     }
-    applyResult({}); // refresh labels/HUD if needed
+    applyResult({});
     return;
   }
 
