@@ -118,6 +118,55 @@ export const COACH_STEPS = [
     anchorId: 'result-explanation',
     placement: 'top',
   },
+// src/constants/tutorialSteps.js
+import { SCREENS } from '../constants/screens.js';
+import { State }   from '../state.js';
+
+export function advanceStep() {
+  const s = State.getState();
+  const cur = s.tutorial?.step ?? 0;
+  State.patch({ tutorial: { ...(s.tutorial || {}), step: cur + 1 } });
+}
+
+export const COACH_STEPS = [
+  // … your existing steps …
+
+  // Round Lobby “Pull” explanation
+  {
+    id: 'action-pull',
+    screen: SCREENS.ROUND_LOBBY,
+    text: 'Pulling always costs one thread up front. Some answers refund. Wrong ones leave teeth marks.',
+    anchorId: 'btn2',
+    placement: 'top',
+    veil: 0.18,
+    blur: 0,
+  },
+
+  // >>> NEW: actually ask a tutorial card here <<<
+  {
+    id: 'demo-question',
+    screen: SCREENS.ROUND_LOBBY,
+    text: 'Let’s try one together.',
+    anchorId: 'btn2',
+    placement: 'top',
+    veil: 0.12,
+    blur: 0,
+    task: { type: 'ask-tutorial-q', which: 0, autoAdvanceAfterReveal: true },
+  },
+
+  // After they answer/accept, the tutorial auto-advances to the next step…
+
+  // Reveal explanation, etc.
+  {
+    id: 'reveal-step',
+    screen: SCREENS.REVEAL,
+    text: 'Correct answers refund your thread; wrong answers make you bleed.',
+    anchorId: 'result-explanation',
+    placement: 'top',
+  },
+
+  // …and so on
+];
 
   // Sever & Fate
   {
