@@ -1,17 +1,11 @@
----
-
-# questionCraft.md
-
-*A unified standard for writing NOUS questions that cut, not quiz.*
-
----
-
 ## 0) The Point
 
 NOUS questions aren’t trivia. They expose **why** people assume, not **what** they know. 
 
-A NOUS card fails the instant the player realizes they’re analyzing wording. The prompt must feel like a normal utterance. The “aha” is not “clever grammar trick,” but:
-**“Oh… I read that the other way — and that reveals something about me.”**
+A NOUS card fails the instant the player realizes they’re analyzing wording. The prompt must feel like a normal utterance. The “aha” is not a “clever grammar trick,” but:
+**“Oh… I read that the other way — and that reveals something about me.”** NOUS questions aren’t trivia. They expose **why** people assume, not **what** they know.
+
+> *It feels like a dad‑joke, a “well‑you’re‑not‑wrong” meme, a Jackbox prompt, and a séance—all at once.*
 
 **One-line litmus:**
 
@@ -62,16 +56,49 @@ Every question has three answers: **Typical, Revelatory, Wrong.**
 * Typical: **+2 points**, **+0 thread**
 * Revelatory: **+1 point**, **+1 thread**
 * Wrong: **+0 points**, **−1 thread**
+Per‑question weights & overrides live in **`traitConfig.js`**.
+---
+
+## 3) Anatomy of a Question
+
+### 1  Core Intent
+
+Instead of asking *“Do you know the answer?”* NOUS asks:
+
+> **“Why did you assume that was the only answer?”**
+
+#### Lenses & Biases
+
+| Lens tested   | Typical bias exposed                             |
+| ------------- | ------------------------------------------------ |
+| **Language**  | default reading of syntax / idiom                |
+| **Meaning**   | automatic scope, scale or metaphor               |
+| **Exclusion** | unseen constraints players imagine are ruled out |
+
+A **Tier 5** item triggers an **“Oh—wait…”** realisation when the hidden frame snaps into view.
 
 ---
 
-## 3) Categories (Mind / Body / Soul)
+### 2  Question Anatomy
 
-Each card belongs to exactly one category (even if it *touches* others).
+| Field                    | Purpose                                          |
+| ------------------------ | ------------------------------------------------ |
+| `title`                  | Evocative header                                 |
+| `text`                   | The prompt                                       |
+| `answers[]`              | Three objects ― `Typical`, `Revelatory`, `Wrong` |
+| `answers[*].text`        | Shown to players                                 |
+| `answers[*].explanation` | Post‑reveal comment                              |
+| *Positions*              | Engine shuffles A / B / C each draw              |
 
-* **Mind** — structure, language, logic, semantics
-* **Body** — physical reality, constraints, sensory/factual limits
-* **Soul** — meaning, intent, ethics, emotional truth
+---
+
+### 3  Categories
+
+| Category | Cognitive challenge                                           |
+| -------- | ------------------------------------------------------------- |
+| **Mind** | Interpret literal structure (language, logic, semantics)      |
+| **Body** | Question physical / factual limits (practical, sensory)       |
+| **Soul** | Confront meaning & intent (emotional, ethical, philosophical) |
 
 ---
 
@@ -110,18 +137,20 @@ Run every draft through these **in order**.
 
 ## 6) Pattern Cookbook (when you’re stuck)
 
-Use at least one pattern. Tier 5 often blends two.
+| #  | Pattern                       | One‑line hook                                   |
+| -- | ----------------------------- | ----------------------------------------------- |
+| 1  | **Scope / Context Ambiguity** | Term spans multiple scales ("birthday", "side") |
+| 2  | **Positivity Conditioning**   | Comfort vs ruthless logic ("revolt")            |
+| 3  | **Fixed‑Function Disruption** | Verb/object repurposed ("climb down")           |
+| 4  | **Overlapping Dichotomy**     | Breaks binary sets ("wheels & flies")           |
+| 5  | **Simplified Heuristic Bias** | Exposes over‑simple rule ("straight line")      |
+| 6  | **Non‑linear Framing**        | Time / order reversals                          |
+| 7  | **Familiarity Heuristic**     | Familiar exemplar beats valid stranger          |
+| 8  | **Gricean Implicature**       | Violates quantity / quality maxims              |
+| 9  | **Proximity / Recency**       | Latest fact overweighted                        |
+| 10 | **Myth vs Mechanism**         | Folklore challenged by cold fact                |
 
-High-yield patterns:
-
-* **Scope / Context ambiguity** (“birthday,” “side”) 
-* **Quantifier scope** (“Everyone loves someone.”) 
-* **Instrument vs ownership** (“with Maria’s brush”) 
-* **Time reference** (“moved forward two days”) 
-* **Gricean implicature** (violating conversational “invisible contract”)
-* **Zeugma / syllepsis** (“took his hat and his leave”) 
-* **Garden-path / expectation flip** 
-* **Myth vs mechanism** 
+Use at least **one** pattern – Tier 5 often blends two.
 
 ---
 
@@ -135,20 +164,47 @@ Rate the *craft quality* of the card, independent of tier.
 * **4** Strong; minor ambiguity remaining
 * **5** Two valid interpretations, crystal framing, genuine reflection
 
+### Rating‑5 Examples
+
+> **Prompt:** *How does this end?*\
+> **A.** With a question mark.\
+> **B.** With an “S.”\
+> **C.** With everyone still sane.\
+> **Twist:** “This” could be the sentence, the word **this**, or the scenario itself.
+
+> **Prompt:** *Which of these has 3 sides?*\
+> **A.** Triangle\
+> **B.** Square\
+> **C.** Circle\
+> **Twist:** “Exactly” is never stated; squares qualify under broader definition.
+
+> **Prompt:** *Where does your journey begin?*\
+> **A.** When you take the first step.\
+> **B.** When you decide to go.\
+> **C.** When you’re ready.\
+> **Twist:** Action vs intention vs readiness – mirrors inner worldview.
+
+> **Prompt:** *How do you prevent the working class from revolting?*\
+> **A.** Bread and circuses.\
+> **B.** They can’t revolt if they’re dead.\
+> **C.** Give them cake.\
+> **Twist:** Ethical horror vs pragmatic control – tension spans categories.
+
+
 ---
 
 ## 8) Tier Taxonomy (0–5) — “What kind of experience is this?”
 
 Tier is about *intent + player feeling*, not just difficulty. (Tier 0 is tutorial.)
 
-| Tier | Name                 | Right-answer pattern                           | Player feeling                     |
-| ---: | -------------------- | ---------------------------------------------- | ---------------------------------- |
-|    0 | **Invitation**       | 3/3 “works”                                    | onboarding, trust-building         |
-|    1 | **Classic Cut**      | 2 of 3                                         | “bias revealed”                    |
-|    2 | **Moral Compass**    | 2 of 3 (values)                                | “it’s about us now”                |
-|    3 | **Scholar’s Gambit** | 2 of 3 (jargon vs folk / precision vs comfort) | “am I smart or gullible?”          |
-|    4 | **Unfair Game**      | 1 of 3                                         | “the mirror is cheating”           |
-|    5 | **Shattered Mirror** | 0 of 3 (projection)                            | “we’re exposed; nothing is stable” |
+| Tier |  Right-answer pattern                           | Player feeling                     |
+| ---: |  ---------------------------------------------- | ---------------------------------- |
+|    0 |  3/3 “works”                                    | onboarding, trust-building         |
+|    1 |  2 of 3                                         | “bias revealed”                    |
+|    2 |  2 of 3 (values)                                | “it’s about us now”                |
+|    3 |  2 of 3 (jargon vs folk / precision vs comfort) | “am I smart or gullible?”          |
+|    4 |  1 of 3                                         | “the mirror is cheating”           |
+|    5 |  0 of 3 (projection)                            | “we’re exposed; nothing is stable” |
 
 ---
 
@@ -169,8 +225,6 @@ A draft isn’t “NOUS-ready” until all are true:
 
 ## 10) Closing Reminder
 
-Stop testing knowledge. Start testing perception.
+NOUS crowns those who **question** the most, not those who **know** the most.
 
-> “We don’t test knowledge. We expose the hand that holds the knife.” 
-
----
+> “We don’t test knowledge. We expose the hand that holds the knife.”
