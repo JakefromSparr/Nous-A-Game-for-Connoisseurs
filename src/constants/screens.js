@@ -4,7 +4,7 @@ export const SCREENS = Object.freeze({
   WAITING_ROOM   : 'WAITING_ROOM',
   RULES          : 'RULES',
   OPTIONS        : 'OPTIONS',
-  TUTORIAL       : 'TUTORIAL',        // ← NEW
+  TUTORIAL       : 'TUTORIAL',        
   GAME_LOBBY     : 'GAME_LOBBY',
   ROUND_LOBBY    : 'ROUND_LOBBY',
   QUESTION       : 'QUESTION',
@@ -16,10 +16,10 @@ export const SCREENS = Object.freeze({
   CREDITS        : 'CREDITS',
 });
 
-// If you want to keep experimental screens around, park them here for later:
 // export const FUTURE_SCREENS = Object.freeze({
 //   LAST_DECK:'LAST_DECK', FINAL_QUESTION:'FINAL_QUESTION', FINAL_RESULT:'FINAL_RESULT',
-//   GAME_OVER:'GAME_OVER', RESULTS:'RESULTS',
+//   GAME_OVER:'GAME_OVER', RESULTS:'RESULTS', INTRODUCTION:'INTRODUCTION', CRACKED_MIRROR:'CRACKED_MIRROR',
 // });
 
 export const ALL_SCREENS = Object.freeze(Object.values(SCREENS));
+
