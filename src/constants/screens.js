@@ -16,10 +16,5 @@ export const SCREENS = Object.freeze({
   CREDITS        : 'CREDITS',
 });
 
-// export const FUTURE_SCREENS = Object.freeze({
-//   LAST_DECK:'LAST_DECK', FINAL_QUESTION:'FINAL_QUESTION', FINAL_RESULT:'FINAL_RESULT',
-//   GAME_OVER:'GAME_OVER', RESULTS:'RESULTS', INTRODUCTION:'INTRODUCTION', CRACKED_MIRROR:'CRACKED_MIRROR',
-// });
-
 export const ALL_SCREENS = Object.freeze(Object.values(SCREENS));
 
