@@ -127,28 +127,6 @@ export function drawQuestion(_state) {
   };
 }
 
-/* ---------- Trait application per answer ---------- */
-function applyTraitDelta(questionId, kindUpper) {
-  const S = State.getState();
-  const key = String(kindUpper || '').toUpperCase(); // 'TYPICAL' | 'REVELATORY' | 'WRONG'
-
-  const cfg  = TRAIT_LOADINGS[questionId] || {};
-  const wt   = cfg.axisWeight || {};                         // e.g., { Z: 1.5 }
-  const ov   = (cfg.overrides && cfg.overrides[key]) || null;
-  const base = CLASS_TRAIT_BASE[key] || { X: 0, Y: 0, Z: 0 };
-
-  // Ensure traits object exists
-  if (!S.traits) S.traits = { X: 0, Y: 0, Z: 0 };
-
-  ['X', 'Y', 'Z'].forEach(axis => {
-    const overrideVal = ov && (ov[axis] ?? null);
-    const weight      = (wt[axis] != null) ? wt[axis] : 1;
-    const delta       = (overrideVal != null) ? overrideVal : (base[axis] || 0) * weight;
-
-    S.traits[axis] = clamp((S.traits[axis] || 0) + delta, -9, 9);
-  });
-}
-
 /* ---------- Evaluate chosen answer (baseline already paid on Pull) ---------- */
 export function evaluate(choiceIndex, _state) {
   const S = State.getState();
