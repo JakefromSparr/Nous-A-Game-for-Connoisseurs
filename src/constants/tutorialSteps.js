@@ -1,5 +1,5 @@
-import { SCREENS }   from '../constants/screens.js';
-import { State }     from '../state.js';
+import { SCREENS } from './screens.js';
+import { State } from '../state.js';
 
 /** Advance tutorial step (call after a reveal accept if you like) */
 export function advanceStep() {
@@ -7,11 +7,9 @@ export function advanceStep() {
   const cur = s.tutorial?.step ?? 0;
   State.patch({ tutorial: { ...(s.tutorial || {}), step: cur + 1 } });
 }
-// src/engine/tutorialEngine.js (excerpt)
 
 // Minimal step model. You can extend with `when(state)` to gate by screen/phase.
 export const COACH_STEPS = [
-  // Welcome / controls
   {
     id: 'welcome-1',
     screen: SCREENS.WELCOME,
@@ -22,12 +20,10 @@ export const COACH_STEPS = [
   {
     id: 'welcome-2',
     screen: SCREENS.WELCOME,
-    text: 'Move the cursor with Up and Down. Use Select to commit. Simple—until it isn’t.',
+    text: 'Move the cursor with Up and Down. Use Select to commit. Simple, until it isn’t.',
     anchorId: 'controller',
     placement: 'top',
   },
-
-  // Parlor / Game Lobby
   {
     id: 'lobby-score',
     screen: SCREENS.GAME_LOBBY,
@@ -38,7 +34,7 @@ export const COACH_STEPS = [
   {
     id: 'lobby-rounds',
     screen: SCREENS.GAME_LOBBY,
-    text: 'Rounds to Win: get this to zero… lose lives when your thread severs.',
+    text: 'Rounds to Win: get this to zero. Lose lives when your thread severs.',
     anchorId: 'rounds-display',
     placement: 'right',
   },
@@ -56,8 +52,6 @@ export const COACH_STEPS = [
     anchorId: 'btn2',
     placement: 'top',
   },
-
-  // Round Lobby HUD
   {
     id: 'hud-thread',
     screen: SCREENS.ROUND_LOBBY,
@@ -68,12 +62,10 @@ export const COACH_STEPS = [
   {
     id: 'hud-score',
     screen: SCREENS.ROUND_LOBBY,
-    text: 'Round Score: points you’ve earned—but not yet kept.',
+    text: 'Round Score: points you’ve earned, but not yet kept.',
     anchorId: 'round-score',
     placement: 'right',
   },
-
-  // Round Lobby Actions
   {
     id: 'action-tieoff',
     screen: SCREENS.ROUND_LOBBY,
@@ -91,12 +83,22 @@ export const COACH_STEPS = [
   {
     id: 'action-pull',
     screen: SCREENS.ROUND_LOBBY,
-    text: 'Pulling always costs one thread up front. Some answers refund. Wrong ones make you bleed.',
+    text: 'Pulling always costs one thread up front. Some answers refund. Wrong ones leave teeth marks.',
     anchorId: 'btn2',
     placement: 'top',
+    veil: 0.18,
+    blur: 0,
   },
-
-  // Question & Reveal
+  {
+    id: 'demo-question',
+    screen: SCREENS.ROUND_LOBBY,
+    text: 'Let’s try one together.',
+    anchorId: 'btn2',
+    placement: 'top',
+    veil: 0.12,
+    blur: 0,
+    task: { type: 'ask-tutorial-q', which: 0, autoAdvanceAfterReveal: true },
+  },
   {
     id: 'question-step',
     screen: SCREENS.QUESTION,
@@ -114,61 +116,10 @@ export const COACH_STEPS = [
   {
     id: 'reveal-step',
     screen: SCREENS.REVEAL,
-    text: 'Correct answers refund your thread; wrong answers leave teeth marks.',
+    text: 'Correct answers refund your thread. Wrong answers make you bleed.',
     anchorId: 'result-explanation',
     placement: 'top',
   },
-// src/constants/tutorialSteps.js
-import { SCREENS } from '../constants/screens.js';
-import { State }   from '../state.js';
-
-export function advanceStep() {
-  const s = State.getState();
-  const cur = s.tutorial?.step ?? 0;
-  State.patch({ tutorial: { ...(s.tutorial || {}), step: cur + 1 } });
-}
-
-export const COACH_STEPS = [
-  // … your existing steps …
-
-  // Round Lobby “Pull” explanation
-  {
-    id: 'action-pull',
-    screen: SCREENS.ROUND_LOBBY,
-    text: 'Pulling always costs one thread up front. Some answers refund. Wrong ones leave teeth marks.',
-    anchorId: 'btn2',
-    placement: 'top',
-    veil: 0.18,
-    blur: 0,
-  },
-
-  // >>> NEW: actually ask a tutorial card here <<<
-  {
-    id: 'demo-question',
-    screen: SCREENS.ROUND_LOBBY,
-    text: 'Let’s try one together.',
-    anchorId: 'btn2',
-    placement: 'top',
-    veil: 0.12,
-    blur: 0,
-    task: { type: 'ask-tutorial-q', which: 0, autoAdvanceAfterReveal: true },
-  },
-
-  // After they answer/accept, the tutorial auto-advances to the next step…
-
-  // Reveal explanation, etc.
-  {
-    id: 'reveal-step',
-    screen: SCREENS.REVEAL,
-    text: 'Correct answers refund your thread; wrong answers make you bleed.',
-    anchorId: 'result-explanation',
-    placement: 'top',
-  },
-
-  // …and so on
-];
-
-  // Sever & Fate
   {
     id: 'severed',
     screen: SCREENS.THREAD_SEVERED,
@@ -190,14 +141,11 @@ export const COACH_STEPS = [
     anchorId: 'score-display',
     placement: 'top',
   },
-
-  // Closing
   {
     id: 'closing',
     screen: SCREENS.GAME_LOBBY,
-    text: 'That’s all you need. The rest is you—and what gets noticed.',
+    text: 'That’s all you need. The rest is you, and what gets noticed.',
     anchorId: 'controller',
     placement: 'top',
   },
 ];
-
