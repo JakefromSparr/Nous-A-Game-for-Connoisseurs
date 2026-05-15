@@ -5,3 +5,4 @@
 - Fixed tutorial imports and restored drawTutorialQuestion
 - Enabled tier escalation and deck refresh with memory-based answer blocking
 - Added reset-game action to replay from Final Reading
+- Added a centralized Grin flavor text system and migrated the Waiting Room observed-count line to it.

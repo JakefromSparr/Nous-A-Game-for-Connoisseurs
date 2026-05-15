@@ -26,6 +26,9 @@ function buildInitialState() {
     roundsToWin: DEFAULTS.roundsToWin,
     roundsWon: 0,
     roundNumber: 1,
+    gatheredCount: 0,
+    observedCount: 0,
+    grinPhase: null,
 
     /* ---- Round runtime ---- */
     roundScore: 0,
@@ -160,6 +163,9 @@ function initializeGame(participants = 1) {
     roundsToWin: DEFAULTS.roundsToWin,
     roundsWon: 0,
     roundNumber: 1,
+    gatheredCount: Math.max(1, Number(participants) || 1),
+    observedCount: Math.max(1, Number(participants) || 1) + 1,
+    grinPhase: null,
 
     // Round runtime
     roundScore: 0,
