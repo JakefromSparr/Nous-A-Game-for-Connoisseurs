@@ -57,6 +57,12 @@ export const persistedGameStateSchema = z.object({
 
   notWrongCount: z.number().int().min(0),
 
+  gatheredCount: z.number().int().min(0).default(0),
+  observedCount: z.number().int().min(0).default(0),
+  waitingRoomReceiptText: z.string().default(''),
+  waitingRoomReceiptVisible: z.boolean().default(false),
+  grinPhase: z.string().nullable().default(null),
+
   // Difficulty
   startingDifficulty: z.number().int().min(1).max(3).default(1),  // user preference (1..3)
   difficultyLevel: z.number().int().min(1),                       // live unlocked cap (up to 7)

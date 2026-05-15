@@ -8,7 +8,7 @@ import * as Q       from './engine/questionEngine.js';
 import * as Fate    from './engine/fateEngine.js';
 import * as Round   from './engine/roundEngine.js';
 import * as Tutor   from './engine/tutorialEngine.js';
-import { getGrinLine } from './engine/grinEngine.js';
+import { getObservedPresenceLine } from './engine/grinEngine.js';
 
 /* ---------------- helpers ---------------- */
 
@@ -26,6 +26,9 @@ function renderScreenBody(target, st) {
   if (target === SCREENS.FATE_RESULT) {
     const summary = st.roundSummary;
     if (summary?.fateText) UI.showFateResult?.(summary.fateText);
+  }
+  if (target === SCREENS.WAITING_ROOM) {
+    UI.showWaitingRoom?.(st);
   }
 }
 
@@ -115,7 +118,11 @@ const ACTIONS = {
   'welcome-select'  : () => {
     const choice = UI.getWelcomeSelection();
 
-    if (choice === 'Play')     return { next: SCREENS.WAITING_ROOM };
+    if (choice === 'Play') {
+      State.clearWaitingRoomReceipt?.();
+      UI.showParticipantEntry?.();
+      return { next: SCREENS.WAITING_ROOM };
+    }
     if (choice === 'Rules')    return { next: SCREENS.RULES };
     if (choice === 'Options')  return { next: SCREENS.OPTIONS };
 
@@ -126,11 +133,17 @@ const ACTIONS = {
 
     if (choice === 'Reset Save') {
       State.resetSave?.();
+      State.clearWaitingRoomReceipt?.();
+      UI.showParticipantFlavor?.('');
       return { next: SCREENS.WELCOME };
     }
     return {};
   },
-  'back-to-welcome' : () => ({ next: SCREENS.WELCOME }),
+  'back-to-welcome' : () => {
+    State.clearWaitingRoomReceipt?.();
+    UI.showParticipantFlavor?.('');
+    return { next: SCREENS.WELCOME };
+  },
 
   /* RULES */
   'rules-more'      : () => ({}),
@@ -156,23 +169,46 @@ const ACTIONS = {
   },
 
   /* WAITING ROOM */
-  'participants-down': () => (UI.adjustParticipantCount(-1), {}),
-  'participants-up'  : () => (UI.adjustParticipantCount(+1), {}),
-  'participants-confirm': () => {
-    const gathered = UI.confirmParticipants();
-    const observed = gathered + 1;
-    const line = getGrinLine('WAITING_ROOM_OBSERVED', { gathered, observed });
+  'participants-down': () => {
+    const s = State.getState();
 
-    State.patch({ gatheredCount: gathered, observedCount: observed });
+    if (s.waitingRoomReceiptVisible) {
+      State.clearWaitingRoomReceipt?.();
+      UI.showParticipantFlavor?.('');
+      return {};
+    }
+
+    UI.adjustParticipantCount(-1);
+    return {};
+  },
+  'participants-up'  : () => {
+    if (State.getState().waitingRoomReceiptVisible) return {};
+
+    UI.adjustParticipantCount(+1);
+    return {};
+  },
+  'participants-confirm': () => {
+    const s = State.getState();
+
+    if (s.waitingRoomReceiptVisible) {
+      const gathered = Math.max(1, Number(s.gatheredCount || UI.confirmParticipants()) || 1);
+      State.initializeGame(gathered);
+      return { next: SCREENS.GAME_LOBBY };
+    }
+
+    const gathered = UI.confirmParticipants();
+    const observed = Number(gathered) + 1;
+    const line = getObservedPresenceLine(gathered);
+
+    State.patch({
+      gatheredCount: gathered,
+      observedCount: observed,
+      waitingRoomReceiptText: line,
+      waitingRoomReceiptVisible: true,
+    });
     UI.showParticipantFlavor(line);
 
-    setTimeout(() => {
-      State.initializeGame(gathered);
-      State.patch({ gatheredCount: gathered, observedCount: observed });
-      applyResult({ next: SCREENS.GAME_LOBBY });
-    }, 900);
-
-    // Stay on WAITING_ROOM while the line shows
+    // Stay on WAITING_ROOM while the receipt phase shows.
     return {};
   },
 
@@ -297,6 +333,8 @@ const ACTIONS = {
   'reset-game'  : () => {
     State.resetGame?.();
     State.loadData?.();
+    State.clearWaitingRoomReceipt?.();
+    UI.showParticipantEntry?.();
     return { next: SCREENS.WAITING_ROOM };
   },
   'quit-game'   : () => ({ next: SCREENS.CREDITS }),

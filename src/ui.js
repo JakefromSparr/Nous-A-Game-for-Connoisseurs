@@ -193,6 +193,23 @@ export const UI = (() => {
     flavor.hidden = !flavor.textContent;
   };
 
+  const showWaitingRoom = (state = {}) => {
+    if (state.waitingRoomReceiptVisible) {
+      const gathered = Number(state.gatheredCount);
+
+      if (Number.isFinite(gathered) && gathered > 0) {
+        pCount = Math.max(1, Math.min(20, gathered));
+      }
+
+      updatePDisp();
+      showParticipantFlavor(state.waitingRoomReceiptText);
+      return;
+    }
+
+    updatePDisp();
+    showParticipantFlavor('');
+  };
+
   const showParticipantEntry = () => {
     pCount = 1;
     updatePDisp();
@@ -309,6 +326,7 @@ export const UI = (() => {
 
     /* participant dialog */
     showParticipantEntry,
+    showWaitingRoom,
     adjustParticipantCount,
     getParticipantCount: () => pCount,
     confirmParticipants,     // now pure
