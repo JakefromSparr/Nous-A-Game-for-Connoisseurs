@@ -187,11 +187,10 @@ export const UI = (() => {
   const confirmParticipants = () => pCount;
 
   // Called by handleAction AFTER confirmParticipants()
-  const showParticipantFlavor = (n) => {
+  const showParticipantFlavor = (text) => {
     if (!flavor) return;
-    const noun = n === 1 ? 'voice' : 'voices';
-    flavor.textContent = `Nous hears ${n} ${noun}. It prefers odd numbers.`;
-    flavor.hidden = false;
+    flavor.textContent = String(text ?? '');
+    flavor.hidden = !flavor.textContent;
   };
 
   const showParticipantEntry = () => {

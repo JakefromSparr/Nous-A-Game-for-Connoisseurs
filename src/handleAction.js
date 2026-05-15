@@ -8,6 +8,7 @@ import * as Q       from './engine/questionEngine.js';
 import * as Fate    from './engine/fateEngine.js';
 import * as Round   from './engine/roundEngine.js';
 import * as Tutor   from './engine/tutorialEngine.js';
+import { getGrinLine } from './engine/grinEngine.js';
 
 /* ---------------- helpers ---------------- */
 
@@ -158,10 +159,16 @@ const ACTIONS = {
   'participants-down': () => (UI.adjustParticipantCount(-1), {}),
   'participants-up'  : () => (UI.adjustParticipantCount(+1), {}),
   'participants-confirm': () => {
-    const n = UI.confirmParticipants();   // shows the eerie line (impure in current UI)
+    const gathered = UI.confirmParticipants();
+    const observed = gathered + 1;
+    const line = getGrinLine('WAITING_ROOM_OBSERVED', { gathered, observed });
+
+    State.patch({ gatheredCount: gathered, observedCount: observed });
+    UI.showParticipantFlavor(line);
 
     setTimeout(() => {
-      State.initializeGame(n);
+      State.initializeGame(gathered);
+      State.patch({ gatheredCount: gathered, observedCount: observed });
       applyResult({ next: SCREENS.GAME_LOBBY });
     }, 900);
 
