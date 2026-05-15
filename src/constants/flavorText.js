@@ -1,5 +1,19 @@
 // src/constants/flavorText.js
 // Centralized voice lines for Nous. Engines select and interpolate; UI only displays.
+//
+// Voice rule:
+// Nous speaks as We and Us.
+// It should feel like a séance medium with a clipboard:
+// observant, ritual, clinical, and increasingly fear-inducing.
+//
+// WHISPER = unease.
+// The room is wrong, but politely wrong.
+//
+// GRIN = dread.
+// The room is no longer pretending to be neutral.
+//
+// SHATTER = fear.
+// The room breaks. The language should feel colder, shorter, and less safe.
 
 export const GRIN_PHASES = {
   WHISPER: 'WHISPER',
@@ -10,38 +24,65 @@ export const GRIN_PHASES = {
 export const FLAVOR_TEXT = {
   WAITING_ROOM_OBSERVED: {
     [GRIN_PHASES.WHISPER]: [
-      'Nous hears {gathered} gathered. It observes {observed}.',
-      '{gathered} gathered. {observed} observed. Nous does not miscount.',
-      'You count {gathered}. Nous counts {observed}. Begin anyway.',
+      'How strange.\n\nIt feels like there are {observed} here with Us tonight.',
+      '{gatheredWord}, you say?\n\nWe sense a {observedOrdinal}. Ah well.',
     ],
     [GRIN_PHASES.GRIN]: [
-      'You brought {gathered}. Nous brought the number to {observed}.',
-      '{gathered} voices at the table. {observed} shadows listening.',
+      '{gatheredWord}, you say?\n\nThen who is breathing behind you?',
+      'We counted {observedWord}.\n\nAnother among you does not wish to be known. Yet.',
     ],
     [GRIN_PHASES.SHATTER]: [
-      '{gathered} gathered. {observed} observed. One of those numbers is inside you.',
+      '{gatheredWord} came in.\n\n{observedWord} are still here. It is waiting.',
+      'Do not count again.\n\nIt moves when named.',
     ],
   },
 
   // Existing trait intrusion lines, staged here for future migration.
   TRAIT_INTRUSION_MEASURING_DOORFRAME: {
     [GRIN_PHASES.WHISPER]: [
-      'You’re measuring the doorframe again. You will fit.',
+      'You are measuring the doorframe again.\n\nYou will fit.',
+    ],
+    [GRIN_PHASES.GRIN]: [
+      'You keep measuring the doorframe.\n\nIt keeps changing.',
+    ],
+    [GRIN_PHASES.SHATTER]: [
+      'No frame.\n\nNo door.\n\nStill inside.',
     ],
   },
+
   TRAIT_INTRUSION_NEVER_ANSWER_ASKED: {
     [GRIN_PHASES.WHISPER]: [
-      'You never answer the question asked. That’s why you’re interesting.',
+      'You rarely answer the question asked.\n\nThat is why We are listening.',
+    ],
+    [GRIN_PHASES.GRIN]: [
+      'You answer beside the question.\n\nSomething beside you answers too.',
+    ],
+    [GRIN_PHASES.SHATTER]: [
+      'The question opened.\n\nYou stepped through.',
     ],
   },
+
   TRAIT_INTRUSION_PLAN_SIDEWAYS: {
     [GRIN_PHASES.WHISPER]: [
-      'One of you keeps tugging the plan sideways. They’re usually right… at first.',
+      'Someone keeps tugging the plan sideways.\n\nWe have noticed.',
+    ],
+    [GRIN_PHASES.GRIN]: [
+      'Someone keeps pulling sideways.\n\nThe room is starting to follow.',
+    ],
+    [GRIN_PHASES.SHATTER]: [
+      'The plan bent.\n\nSo did the walls.',
     ],
   },
+
   TRAIT_INTRUSION_STOP_PERFORMING: {
     [GRIN_PHASES.WHISPER]: [
-      'Stop performing for each other. I already know.',
+      'Stop performing for each other.\n\nWe already know.',
+    ],
+    [GRIN_PHASES.GRIN]: [
+      'The wrong answers were not accidents.\n\nSomething clapped when you chose them.',
+    ],
+    [GRIN_PHASES.SHATTER]: [
+      'Not wrong.\n\nOffered.',
     ],
   },
 };
