@@ -28,6 +28,8 @@ function buildInitialState() {
     roundNumber: 1,
     gatheredCount: 0,
     observedCount: 0,
+    waitingRoomReceiptText: '',
+    waitingRoomReceiptVisible: false,
     grinPhase: null,
 
     /* ---- Round runtime ---- */
@@ -165,6 +167,8 @@ function initializeGame(participants = 1) {
     roundNumber: 1,
     gatheredCount: Math.max(1, Number(participants) || 1),
     observedCount: Math.max(1, Number(participants) || 1) + 1,
+    waitingRoomReceiptText: '',
+    waitingRoomReceiptVisible: false,
     grinPhase: null,
 
     // Round runtime
@@ -219,6 +223,14 @@ function resetGame() {
   gameState = buildInitialState();
 }
 
+
+function clearWaitingRoomReceipt() {
+  patch({
+    waitingRoomReceiptText: '',
+    waitingRoomReceiptVisible: false,
+  });
+}
+
 /* Spend 1 thread in Round Lobby to prime double points on next question */
 function spendThreadToWeave() {
   if (gameState.thread <= 0 || gameState.weavePrimed) return false;
@@ -238,6 +250,7 @@ export const State = {
   loadData,
   initializeGame,
   resetGame,
+  clearWaitingRoomReceipt,
 
   // persistence
   saveGame,

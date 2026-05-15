@@ -12,7 +12,11 @@ export const ROUTES = {
   },
 
   [SCREENS.WAITING_ROOM]: {
-    labels: ['Less','Confirm','More'],
+    labels: [
+      s => (s.waitingRoomReceiptVisible ? 'Turn Back' : 'Less'),
+      s => (s.waitingRoomReceiptVisible ? 'Enter' : 'Confirm'),
+      s => (s.waitingRoomReceiptVisible ? '' : 'More'),
+    ],
     actions: ['participants-down','participants-confirm','participants-up'],
   },
 

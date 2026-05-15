@@ -120,6 +120,19 @@ p, li {
   opacity: 0.85;
 }
 
+
+/* ===== Waiting Room observed-presence receipt ===== */
+.waiting-room-receipt {
+  white-space: pre-line;
+  margin-top: 2rem;
+  margin-bottom: 1.25rem;
+  line-height: 1.7;
+  max-width: 640px;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+}
+
 /* ===== Welcome Menu ===== */
 #welcome-options { list-style: none; margin-top: 1.5rem; text-align: left; }
 #welcome-options li {

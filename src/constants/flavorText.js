@@ -24,15 +24,15 @@ export const GRIN_PHASES = {
 export const FLAVOR_TEXT = {
   WAITING_ROOM_OBSERVED: {
     [GRIN_PHASES.WHISPER]: [
-      'How strange.\n\nIt feels like there are {observed} here with Us tonight.',
-      '{gatheredWord}, you say?\n\nWe sense a {observedOrdinal}. Ah well.',
+      'How strange.\n\nIt feels like there are {observedWord} here with Us tonight.',
+      '{gatheredWord}, you say?\n\nWe sense a {observedOrdinal}.',
     ],
     [GRIN_PHASES.GRIN]: [
       '{gatheredWord}, you say?\n\nThen who is breathing behind you?',
-      'We counted {observedWord}.\n\nAnother among you does not wish to be known. Yet.',
+      'We counted {observedWord}.\n\nOne of you did not.',
     ],
     [GRIN_PHASES.SHATTER]: [
-      '{gatheredWord} came in.\n\n{observedWord} are still here. It is waiting.',
+      '{gatheredWord} came in.\n\n{observedWord} are still here.',
       'Do not count again.\n\nIt moves when named.',
     ],
   },
