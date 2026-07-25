@@ -5,35 +5,6 @@ Three on‑screen (or physical) buttons. One shared will. The deck watches back.
 
 ---
 
-## Quickstart
-
-```bash
-# 1) Clone
-git clone https://github.com/JakefromSparr/Nous-A-Game-for-Connoisseurs.git
-cd Nous-A-Game-for-Connoisseurs
-
-# 2) Install
-npm install
-
-# 3) Run the local dev server
-npm run dev
-# then open the local URL printed by Vite
-```
-
-## Build & Deploy
-
-- **Build:** `npm run build`
-- **Preview build:** `npm run preview`
-- **Netlify:** deploy from repo root. `vite.config.js` uses `base: './'` so asset paths work.
-- **SPA redirect** (so deep links don’t 404):
-
-```toml
-# netlify.toml
-[[redirects]]
-  from = "/*"
-  to   = "/index.html"
-  status = 200
-```
 
 ---
 
