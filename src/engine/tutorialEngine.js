@@ -5,6 +5,7 @@ import { SCREENS } from '../constants/screens.js';
 import { COACH_STEPS } from '../constants/tutorialSteps.js';
 
 let _running = false;
+const TUTORIAL_IDS = ['002', '003', '001'];
 
 /** Helpers */
 const getStepIdx = () => Math.max(0, (State.getState().tutorial?.step ?? 0));
@@ -24,7 +25,6 @@ function _forceTutorialQuestion(which = 0) {
   const deck = s.questionDeck || [];
   const answered = s.answeredQuestionIds || new Set();
 
-  const TUTORIAL_IDS = ['TUT001', 'TUT002'];
   const pool = deck.filter(q => q.tier === 0 && TUTORIAL_IDS.includes(String(q.id)));
   if (!pool.length) return;
 
@@ -52,7 +52,9 @@ function _forceTutorialQuestion(which = 0) {
 
 export function drawTutorialQuestion() {
   const s = State.getState();
-  const question = (s.questionDeck || []).find(q => q.tier === 0 && !s.answeredQuestionIds?.has?.(q.id));
+  const question = TUTORIAL_IDS
+    .map((id) => (s.questionDeck || []).find((q) => String(q.id) === id))
+    .find((q) => q && !s.answeredQuestionIds?.has?.(q.id));
   if (!question) return { question: null, answers: [], category: '' };
   return {
     question,
@@ -121,7 +123,13 @@ function _end() {
 export function startTutorial() {
   if (_running) return;
   _running = true;
-  State.patch({ tutorial: { active: true, step: 0, awaitRevealToAdvance: false } });
+  const answeredQuestionIds = new Set(State.getState().answeredQuestionIds || []);
+  TUTORIAL_IDS.forEach((id) => answeredQuestionIds.delete(id));
+  State.patch({
+    thread: 4,
+    answeredQuestionIds,
+    tutorial: { active: true, step: 0, awaitRevealToAdvance: false },
+  });
   UI.bindCoachHandlers({ onNext: _advanceStep, onSkip: _end });
   _displayStep();
 }

@@ -9,6 +9,8 @@ export const DEFAULTS = {
   baseT0: 4,           // starting thread for Round 1
   roundsToWin: 3,      // how many rounds to win the game
   threadCapBase: 5,
+  roundCardLimitBase: 6,
+  roundCardLimitMax: 10,
 };
 
 const emptyTally = () => ({ A: 0, B: 0, C: 0 });
@@ -31,6 +33,8 @@ function buildInitialState() {
     waitingRoomReceiptText: '',
     waitingRoomReceiptVisible: false,
     grinPhase: null,
+    firstEntryActive: false,
+    tasselTaken: false,
 
     /* ---- Round runtime ---- */
     roundScore: 0,
@@ -39,9 +43,16 @@ function buildInitialState() {
     nextRoundT0: DEFAULTS.baseT0,   // seed for next round’s starting thread
     weavePrimed: false,             // spend thread to double next Q points
     pendingBank: 0,                 // reserved for future use (bank animations, etc.)
+    isIntroRound: false,
+    roundCardLimit: DEFAULTS.roundCardLimitBase,
+    cardPoolBonus: 0,
+    roundQuestionIds: [],
+    roundDrawPile: [],
+    roundIsRecycling: false,
+    currentQuestionIsRepeat: false,
 
-    /* ---- Difficulty / gating ----
-       The question engine chooses from tiers <= difficultyLevel. */
+    /* ---- Difficulty / draw weighting ----
+       Every normal tier remains possible; this shifts the odds. */
     audacity: 0,
     startingDifficulty: 1,
     difficultyLevel: 1,
@@ -174,6 +185,8 @@ function initializeGame(participants = 1) {
     waitingRoomReceiptText: '',
     waitingRoomReceiptVisible: false,
     grinPhase: null,
+    firstEntryActive: true,
+    tasselTaken: false,
 
     // Round runtime
     roundScore: 0,
@@ -182,6 +195,13 @@ function initializeGame(participants = 1) {
     nextRoundT0: DEFAULTS.baseT0,
     weavePrimed: false,
     pendingBank: 0,
+    isIntroRound: false,
+    roundCardLimit: DEFAULTS.roundCardLimitBase,
+    cardPoolBonus: 0,
+    roundQuestionIds: [],
+    roundDrawPile: [],
+    roundIsRecycling: false,
+    currentQuestionIsRepeat: false,
 
     // Difficulty / gating
     audacity: 0,

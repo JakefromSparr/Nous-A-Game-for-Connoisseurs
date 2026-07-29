@@ -2,13 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { State } from '../src/state.js';
-import { evaluate } from '../src/engine/questionEngine.js';
+import { drawQuestion, evaluate } from '../src/engine/questionEngine.js';
 import * as Fate from '../src/engine/fateEngine.js';
 import * as Round from '../src/engine/roundEngine.js';
 import { sanitizeBeforeSave, validateOnLoad } from '../src/validator.js';
 import { composeFinalReading } from '../src/engine/readingEngine.js';
 import { SCREENS } from '../src/constants/screens.js';
 import { ROUTES } from '../src/constants/routes.js';
+import questionDeck from '../src/constants/questionDeck.js';
 
 function answer(kind, label = 'Potential') {
   State.resetGame();
@@ -83,4 +84,135 @@ test('screens, routes, and HTML stay in sync', async () => {
     assert.equal(route.labels.length, 3, `${screen} must have three labels`);
     assert.equal(route.actions.length, 3, `${screen} must have three actions`);
   }
+});
+
+test('First Entry uses only cards 001–003 and starts with three or four Thread', () => {
+  const base = {
+    questionDeck,
+    firstEntryActive: true,
+    tasselTaken: false,
+    activeRoundEffects: [],
+  };
+  const withoutTassel = Round.startRound(base);
+  const withTassel = Round.startRound({ ...base, tasselTaken: true });
+
+  assert.deepEqual(withoutTassel.roundQuestionIds, ['001', '002', '003']);
+  assert.equal(withoutTassel.thread, 3);
+  assert.equal(withTassel.thread, 4);
+  assert.equal(withTassel.isIntroRound, true);
+});
+
+test('First Entry is a prologue and does not count as a won round', () => {
+  const state = {
+    isIntroRound: true,
+    notWrongCount: 1,
+    roundScore: 2,
+    thread: 2,
+    score: 0,
+    roundsWon: 0,
+    roundNumber: 1,
+    lives: 2,
+  };
+  const tied = Round.tieOff(state);
+  const finalized = Round.finalizeRound({ ...state, ...tied }, {});
+
+  assert.equal(tied.roundWon, true);
+  assert.equal(finalized.score, 2);
+  assert.equal(finalized.roundsWon, 0);
+  assert.equal(finalized.roundNumber, 1);
+  assert.equal(finalized.firstEntryActive, false);
+});
+
+test('normal rounds deal six unanswered non-tutorial cards from any tier', () => {
+  const highTierDeck = questionDeck.filter((question) => question.tier >= 4);
+  const state = {
+    questionDeck: highTierDeck,
+    answeredQuestionIds: new Set(),
+    firstEntryActive: false,
+    nextRoundT0: 4,
+    activeRoundEffects: [],
+    difficultyLevel: 1,
+  };
+  const round = Round.startRound(state);
+
+  assert.equal(round.roundQuestionIds.length, 6);
+  assert.equal(round.roundCardLimit, 6);
+  assert.equal(round.roundQuestionIds.every((id) => {
+    const question = highTierDeck.find((item) => item.id === id);
+    return question && question.tier >= 4;
+  }), true);
+});
+
+test('a round packet recycles only after its unseen cards are exhausted', () => {
+  State.resetGame();
+  const shape = questionDeck.find((question) => question.id === '001');
+  const classic = questionDeck.find((question) => question.id === '002');
+  State.patch({
+    questionDeck: [shape, classic],
+    roundQuestionIds: ['001', '002'],
+    roundDrawPile: ['001', '002'],
+    roundIsRecycling: false,
+    questionHistory: {},
+  });
+
+  const first = drawQuestion(State.getState());
+  State.patch(first.patch);
+  const second = drawQuestion(State.getState());
+  State.patch(second.patch);
+  const recycled = drawQuestion(State.getState());
+
+  assert.equal(first.question.id, '001');
+  assert.equal(second.question.id, '002');
+  assert.equal(recycled.patch.currentQuestionIsRepeat, true);
+  assert.equal(['001', '002'].includes(recycled.question.id), true);
+});
+
+test('recycled cards disable prior answers and do not collect traits again', () => {
+  State.resetGame();
+  const shape = questionDeck.find((question) => question.id === '001');
+  State.patch({
+    questionDeck: [shape],
+    roundQuestionIds: ['001'],
+    roundDrawPile: ['001'],
+    roundIsRecycling: false,
+    questionHistory: {},
+    thread: 10,
+  });
+
+  const first = drawQuestion(State.getState());
+  State.patch({
+    ...first.patch,
+    currentQuestion: first.question,
+    currentAnswers: first.answers,
+  });
+  const squareIndex = first.answers.findIndex((item) => item.label === 'Square');
+  State.patch(evaluate(squareIndex, State.getState()).patch);
+  const traitsAfterFirstChoice = { ...State.getState().traits };
+
+  const recycled = drawQuestion(State.getState());
+  const square = recycled.answers.find((item) => item.label === 'Square');
+  assert.equal(recycled.patch.currentQuestionIsRepeat, true);
+  assert.equal(square.unavailable, true);
+
+  State.patch({
+    ...recycled.patch,
+    currentQuestion: recycled.question,
+    currentAnswers: recycled.answers,
+  });
+  const triangleIndex = recycled.answers.findIndex((item) => item.label === 'Triangle');
+  State.patch(evaluate(triangleIndex, State.getState()).patch);
+  assert.deepEqual(State.getState().traits, traitsAfterFirstChoice);
+});
+
+test('tutorial cards are isolated from the normal deck and preserve authored copy', () => {
+  const tutorial = questionDeck.filter((question) => question.tier === 0);
+  const shape = tutorial.find((question) => question.id === '001');
+  const classic = tutorial.find((question) => question.id === '002');
+  const afterWord = tutorial.find((question) => question.id === '003');
+
+  assert.deepEqual(tutorial.map((question) => question.id), ['001', '002', '003']);
+  assert.equal(shape.answers[1].label, 'Square');
+  assert.equal(shape.insert, 'Every story has two sides. Questions are less considerate.');
+  assert.equal(classic.title, 'A Classic');
+  assert.equal(afterWord.title, 'After Word');
 });

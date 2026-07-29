@@ -19,6 +19,7 @@ const AnswerView = z.object({
   label: z.string(),
   answerClass: z.string().optional(),
   explanation: z.string().optional(),
+  unavailable: z.boolean().optional(),
 }).passthrough();
 
 const ActiveRoundEffect = z.object({
@@ -62,6 +63,8 @@ export const persistedGameStateSchema = z.object({
   waitingRoomReceiptText: z.string().default(''),
   waitingRoomReceiptVisible: z.boolean().default(false),
   grinPhase: z.string().nullable().default(null),
+  firstEntryActive: z.boolean().default(false),
+  tasselTaken: z.boolean().default(false),
 
   // Difficulty
   startingDifficulty: z.number().int().min(1).max(3).default(1),
@@ -73,8 +76,18 @@ export const persistedGameStateSchema = z.object({
   // Sets are stored as arrays (ids can be number or string)
   answeredQuestionIds: z.array(z.union([z.number(), z.string()])),
   completedFateCardIds: z.array(z.union([z.number(), z.string()])),
-  questionHistory: z.record(z.string(), z.string()).default({}),
+  questionHistory: z.record(
+    z.string(),
+    z.union([z.string(), z.array(z.string())])
+  ).default({}),
   choiceEvidence: z.array(z.any()).default([]),
+  isIntroRound: z.boolean().default(false),
+  roundCardLimit: z.number().int().min(0).max(10).default(6),
+  roundQuestionIds: z.array(z.union([z.number(), z.string()])).default([]),
+  roundDrawPile: z.array(z.union([z.number(), z.string()])).default([]),
+  roundIsRecycling: z.boolean().default(false),
+  currentQuestionIsRepeat: z.boolean().default(false),
+  cardPoolBonus: z.number().int().min(0).max(4).default(0),
 
   activeRoundEffects: z.array(ActiveRoundEffect),
   activePowerUps: z.array(z.string()),

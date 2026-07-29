@@ -71,7 +71,7 @@
         <div id="difficulty-block">
           <h3>Difficulty</h3>
           <p class="subtitle">
-            Sets the highest tier of questions that can appear this session.
+            Shifts the draw toward stranger cards without excluding the others.
           </p>
 
           <div
@@ -90,9 +90,9 @@
           </div>
 
           <p class="difficulty-key">
-            <em>1</em> → only Tier&nbsp;1 cards •
-            <em>2</em> → Tiers&nbsp;1–2 •
-            <em>3</em> → Tiers&nbsp;1–3
+            <em>1</em> → familiar •
+            <em>2</em> → searching •
+            <em>3</em> → severe
           </p>
         </div>
 
@@ -102,12 +102,13 @@
       <!-- ───────────────── GAME LOBBY ───────────────── -->
       <section class="game-screen" data-screen="GAME_LOBBY" aria-hidden="true">
         <h2 class="gold-text">The Parlor</h2>
+        <p id="parlor-message" class="parlor-message" hidden></p>
 
         <div id="hud">
           <p><strong>Lives:</strong> <span id="lives-display">0</span></p>
           <p><strong>Rounds to Win:</strong> <span id="rounds-display">3</span></p>
           <p><strong>Score:</strong> <span id="score-display">0</span></p>
-          <p>
+          <p id="divinations-row">
             <strong>Active Divinations:</strong>
             <span id="divinations-text">[None]</span>
           </p>
@@ -150,6 +151,7 @@
         <p id="result-question" class="subtitle"></p>
         <p><strong>Your answer:</strong> <span id="result-chosen-answer"></span></p>
         <p id="result-explanation"></p>
+        <p id="result-insert" class="result-insert" hidden></p>
         <p id="result-outcome-message"></p>
       </section>
 
