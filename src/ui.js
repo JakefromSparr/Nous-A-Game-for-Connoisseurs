@@ -181,6 +181,34 @@ export const UI = (() => {
     const om = $('result-outcome-message'); if (om) om.textContent = outcomeMessage;
   }
 
+  function showCrossroads(state = {}) {
+    const candidates = Array.isArray(state.crossroadCandidates)
+      ? state.crossroadCandidates
+      : [];
+    const selected = Math.max(
+      0,
+      Math.min(candidates.length - 1, Number(state.crossroadSelection) || 0)
+    );
+
+    ['crossroad-left', 'crossroad-right'].forEach((id, index) => {
+      const path = $(id);
+      if (!path) return;
+      const questionId = candidates[index];
+      const question = (state.questionDeck || []).find(
+        (item) => String(item.id) === String(questionId)
+      );
+      const available = !!question;
+      const category = path.querySelector('.crossroad-category');
+      const familiar = path.querySelector('.crossroad-familiar');
+
+      path.hidden = !available;
+      path.classList.toggle('is-selected', available && index === selected);
+      path.setAttribute('aria-current', available && index === selected ? 'true' : 'false');
+      if (category) category.textContent = question?.category || 'Faded Ink';
+      if (familiar) familiar.hidden = !available || !state.roundIsRecycling;
+    });
+  }
+
   function showFailure(ptsLost) {
     const el = $('lost-points-display');
     if (el) el.textContent = ptsLost ?? 0;
@@ -376,6 +404,7 @@ export const UI = (() => {
 
     /* rendering helpers */
     showQuestion,
+    showCrossroads,
     showFateCard,
     showFateChoicesFromState,
     showResult,

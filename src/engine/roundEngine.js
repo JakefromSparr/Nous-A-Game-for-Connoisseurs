@@ -57,12 +57,18 @@ function prepareRoundQuestions(state, isIntroRound) {
     effectBonus;
   const limit = clamp(requestedLimit, 1, DEFAULTS.roundCardLimitMax);
   const answered = state.answeredQuestionIds || new Set();
-  const available = deck.filter((question) =>
-    Number(question.tier) > 0 &&
-    Array.isArray(question.answers) &&
-    question.answers.length >= 3 &&
-    !answered.has(question.id)
-  );
+  const available = deck.filter((question) => {
+    const tier = Number(question.tier);
+    const tierIsAvailable =
+      (tier >= 1 && tier <= 4) ||
+      (tier === 5 && (state.roundsWon || 0) >= 2);
+    return (
+      tierIsAvailable &&
+      Array.isArray(question.answers) &&
+      question.answers.length >= 3 &&
+      !answered.has(question.id)
+    );
+  });
   const ids = weightedPacket(available, limit, state).map((question) => question.id);
 
   return { limit, ids, drawPile: [...ids] };
@@ -72,7 +78,7 @@ export function startRound(state) {
   const isIntroRound = !!state.firstEntryActive;
   const t0 = isIntroRound
     ? (state.tasselTaken ? 4 : 3)
-    : (typeof state.nextRoundT0 === 'number' ? state.nextRoundT0 : DEFAULTS.baseT0);
+    : DEFAULTS.baseT0;
   const roundQuestions = prepareRoundQuestions(state, isIntroRound);
 
   // Apply any fate effects that trigger at round start (e.g., thread +1).
@@ -93,6 +99,8 @@ export function startRound(state) {
     roundDrawPile: roundQuestions.drawPile,
     roundIsRecycling: false,
     currentQuestionIsRepeat: false,
+    crossroadCandidates: [],
+    crossroadSelection: 0,
 
     currentQuestion: null,
     currentAnswers: [],
@@ -114,13 +122,9 @@ export function canTieOff(state) {
 }
 
 export function tieOff(state) {
-  const leftoverThread = Math.max(0, state.thread || 0);
-  const threadCap = DEFAULTS.threadCapBase + Math.floor((state.audacity || 0) / 2);
-  const nextRoundT0 = clamp((DEFAULTS.baseT0 + leftoverThread), 3, threadCap);
-
   return {
     pendingBank: state.roundScore || 0,
-    nextRoundT0,
+    nextRoundT0: DEFAULTS.baseT0,
     roundEndedBy: 'TIE_OFF',
     roundWon: canTieOff(state),
   };
@@ -162,6 +166,8 @@ export function finalizeRound(state, fateResolution = {}) {
     roundDrawPile: [],
     roundIsRecycling: false,
     currentQuestionIsRepeat: false,
+    crossroadCandidates: [],
+    crossroadSelection: 0,
 
     currentQuestion: null,
     currentAnswers: [],

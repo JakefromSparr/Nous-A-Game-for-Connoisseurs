@@ -141,6 +141,70 @@ p, li {
   opacity: 0.42;
   text-decoration: line-through;
 }
+
+/* ===== Crossroads ===== */
+.crossroads-instruction { margin-bottom: 1.25rem; }
+.crossroads {
+  width: min(100%, 700px);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 1.25rem;
+  perspective: 900px;
+}
+.crossroad-path {
+  min-height: 235px;
+  padding: 1.1rem;
+  display: grid;
+  grid-template-rows: auto 1fr auto auto;
+  place-items: center;
+  gap: 0.65rem;
+  opacity: 0.55;
+  transform: scale(0.94);
+  transition:
+    opacity var(--transition-speed),
+    transform var(--transition-speed),
+    filter var(--transition-speed);
+}
+.crossroad-path.is-selected {
+  opacity: 1;
+  transform: scale(1.06);
+  filter: drop-shadow(0 0 16px rgba(245, 228, 194, 0.45));
+}
+.crossroad-arrow {
+  font-family: var(--title-font);
+  font-size: 2rem;
+  color: var(--gold-foil-light);
+}
+.crossroad-hall {
+  display: block;
+  width: 100%;
+  max-width: 220px;
+  height: 135px;
+  clip-path: polygon(4% 0, 96% 0, 72% 100%, 28% 100%);
+  background:
+    linear-gradient(90deg, rgba(0,0,0,0.9), transparent 35% 65%, rgba(0,0,0,0.9)),
+    repeating-linear-gradient(0deg, #1b140d 0 15px, #3b2a18 16px 18px);
+  border-top: 2px solid var(--gold-foil-dark);
+  box-shadow: inset 0 0 35px #000;
+}
+.crossroad-category {
+  font-family: var(--title-font);
+  color: var(--gold-foil-light);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.crossroad-familiar {
+  font-size: 0.9rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+.crossroad-marker {
+  color: var(--gold-foil-dark);
+  font-size: 2rem;
+  text-shadow: 0 0 12px var(--glow-color);
+}
 #fate-card-text { margin-bottom: 1rem; }
 .fate-choice-list { list-style: none; opacity: 0.85; }
 

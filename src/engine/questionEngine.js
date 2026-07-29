@@ -46,22 +46,101 @@ function buildAnswers(q) {
   return answers;
 }
 
-/* ---------- Draw from this round's finite packet, then recycle it ---------- */
-export function drawQuestion(_state) {
-  const S = State.getState();
-  const deck = S.questionDeck || [];
+function selectedLabelsFor(question, state) {
+  const previous = state.questionHistory?.[String(question.id)];
+  return new Set(Array.isArray(previous) ? previous : (previous ? [previous] : []));
+}
+
+function hasAvailableAnswer(question, state) {
+  const selected = selectedLabelsFor(question, state);
+  return (question.answers || []).some((answer) => !selected.has(answer.label));
+}
+
+function isAvailableAtCurrentProgress(question, state) {
+  const tier = Number(question.tier);
+  if (state.isIntroRound || state.tutorial?.active) return tier === 0;
+  if (tier >= 1 && tier <= 4) return true;
+  return tier === 5 && (state.roundsWon || 0) >= 2;
+}
+
+function prepareDrawPile(state) {
+  const deck = state.questionDeck || [];
   const byId = new Map(deck.map((question) => [String(question.id), question]));
-  const roundIds = Array.isArray(S.roundQuestionIds) ? S.roundQuestionIds : [];
-  let drawPile = Array.isArray(S.roundDrawPile) ? [...S.roundDrawPile] : [];
-  let isRepeat = !!S.roundIsRecycling;
+  const roundIds = Array.isArray(state.roundQuestionIds) ? state.roundQuestionIds : [];
+  let drawPile = Array.isArray(state.roundDrawPile) ? [...state.roundDrawPile] : [];
+  let isRepeat = !!state.roundIsRecycling;
+
+  drawPile = drawPile.filter((id) => {
+    const question = byId.get(String(id));
+    return (
+      question &&
+      isAvailableAtCurrentProgress(question, state) &&
+      hasAvailableAnswer(question, state)
+    );
+  });
 
   if (!drawPile.length && roundIds.length) {
-    drawPile = shuffle([...roundIds]);
+    drawPile = shuffle([...roundIds]).filter((id) => {
+      const question = byId.get(String(id));
+      return (
+        question &&
+        isAvailableAtCurrentProgress(question, state) &&
+        hasAvailableAnswer(question, state)
+      );
+    });
     isRepeat = true;
   }
 
+  return { byId, drawPile, isRepeat };
+}
+
+export function prepareCrossroads(_state) {
+  const S = State.getState();
+  const prepared = prepareDrawPile(S);
+  const firstId = prepared.drawPile[0];
+  const firstQuestion = prepared.byId.get(String(firstId));
+  const differentCategoryId = prepared.drawPile.slice(1).find((id) => {
+    const question = prepared.byId.get(String(id));
+    return question?.category && question.category !== firstQuestion?.category;
+  });
+  const candidates = firstId === undefined
+    ? []
+    : [
+        firstId,
+        differentCategoryId ?? prepared.drawPile[1],
+      ].filter((id) => id !== undefined);
+
+  return {
+    candidates,
+    patch: {
+      roundDrawPile: prepared.drawPile,
+      roundIsRecycling: prepared.isRepeat,
+      crossroadCandidates: candidates,
+      crossroadSelection: 0,
+    },
+  };
+}
+
+/* ---------- Draw from this round's finite packet, then recycle it ---------- */
+export function drawQuestion(_state, requestedId = null) {
+  const S = State.getState();
+  const prepared = prepareDrawPile(S);
+  const { byId, isRepeat } = prepared;
+  const drawPile = [...prepared.drawPile];
+
   let q = null;
   let answers = [];
+  if (requestedId !== null) {
+    const requestedIndex = drawPile.findIndex(
+      (id) => String(id) === String(requestedId)
+    );
+    if (requestedIndex >= 0) {
+      const [selectedId] = drawPile.splice(requestedIndex, 1);
+      q = byId.get(String(selectedId)) || null;
+      if (q) answers = buildAnswers(q);
+    }
+  }
+
   while (drawPile.length && !q) {
     const nextId = drawPile.shift();
     const candidate = byId.get(String(nextId));
@@ -92,6 +171,8 @@ export function drawQuestion(_state) {
       roundDrawPile: drawPile,
       roundIsRecycling: isRepeat,
       currentQuestionIsRepeat: isRepeat,
+      crossroadCandidates: [],
+      crossroadSelection: 0,
       tierSeen,
     },
   };
