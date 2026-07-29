@@ -9,6 +9,7 @@
  *   tier: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7,
  *   title: string,
  *   text: string,
+ *   insert?: string,
  *   answers: [
  *     { label: string, answerClass: AnswerClass, explanation: string },
  *     { label: string, answerClass: AnswerClass, explanation: string },
@@ -19,9 +20,36 @@
 
 /** @type {Question[]} */
 const questions = [
-  // ─────────────────── Tutorial (Tier 0) ───────────────────
+  // ─────────────────── First Entry / Tutorial (Tier 0) ───────────────────
   {
-    id: 'TUT001',
+    id: '001',
+    category: 'Mind',
+    tier: 0,
+    title: 'The Shape of Things',
+    text: 'Which of these has 3 sides?',
+    insert: 'Every story has two sides. Questions are less considerate.',
+    answers: [
+      {
+        label: 'Triangle',
+        answerClass: 'TYPICAL',
+        explanation:
+          "Of course you’d say that. And you're not wrong. A triangle has three sides.",
+      },
+      {
+        label: 'Square',
+        answerClass: 'REVELATORY',
+        explanation:
+          'The question never said only. A square has three sides... and one more.',
+      },
+      {
+        label: 'Circle',
+        answerClass: 'WRONG',
+        explanation: 'Not even close. A circle is a curve without any sides.',
+      },
+    ],
+  },
+  {
+    id: '002',
     category: 'Mind',
     tier: 0,
     title: 'A Classic',
@@ -48,60 +76,34 @@ const questions = [
     ],
   },
   {
-  id: 'TUT002',
-  category: 'Mind',
-  tier: 0,
-  title: 'After Word',
-  text: 'In the alphabet, which letter comes after P?',
-  answers: [
-    {
-      label: 'Q',
-      answerClass: 'TYPICAL',
-      explanation:
-        'Correct. In the standard sequence, "Q" follows "P". But did you know there was another way to be right?',
-    },
-    {
-      label: 'H',
-      answerClass: 'TYPICAL',
-      explanation:
-        'Correct. In the word "alphabet" itself, "h" follows "p". But did you know there was another way to be right?',
-    },
-    {
-      label: 'V',
-      answerClass: 'REVELATORY',
-      explanation:
-        'Also correct. "V" does come after "P", just not immediately. See? Sometimes there are many right answers.',
-    },
-  ],
-},
-
-  // ─────────────────── Tier 1 ───────────────────
-  {
-    id: 101,
+    id: '003',
     category: 'Mind',
-    tier: 1,
-    title: 'The Shape of Things',
-    text: 'Which of these has 3 sides?',
+    tier: 0,
+    title: 'After Word',
+    text: 'In the alphabet, which letter comes after P?',
     answers: [
       {
-        label: 'Triangle',
+        label: 'Q',
         answerClass: 'TYPICAL',
         explanation:
-          "Of course you’d say that. And you're not wrong. A triangle has three sides.",
+          'Correct. In the standard sequence, "Q" follows "P". But did you know there was another way to be right?',
       },
       {
-        label: 'Square',
+        label: 'H',
+        answerClass: 'TYPICAL',
+        explanation:
+          'Correct. In the word "alphabet" itself, "h" follows "p". But did you know there was another way to be right?',
+      },
+      {
+        label: 'V',
         answerClass: 'REVELATORY',
         explanation:
-          'The question never said only. A square has three sides... and one more.',
-      },
-      {
-        label: 'Circle',
-        answerClass: 'WRONG',
-        explanation: 'Not even close. A circle is a curve without any sides.',
+          'Also correct. "V" does come after "P", just not immediately. See? Sometimes there are many right answers.',
       },
     ],
   },
+
+  // ─────────────────── Tier 1 ───────────────────
   {
     id: 102,
     category: 'Body',

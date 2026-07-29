@@ -1,14 +1,8 @@
 // src/engine/questionEngine.js
 import { State } from '../state.js';
-import { shuffle, clamp } from './utils.js';
+import { shuffle } from './utils.js';
 import { OUTCOME, OUTCOME_EFFECT, WEAVE } from '../constants/answerLogic.js';
-import { TRAIT_LOADINGS } from '../constants/traitConfig.js';
-import { CLASS_TRAIT_BASE } from '../constants/answerLogic.js';
-import { ID_TO_GROUPS } from '../constants/questionGroups.js';
 import { applyTraitDelta } from './traitEngine.js';
-
-// Toggleable fallback: allow repeats if the tier pool is exhausted.
-const ALLOW_REPEATS_WHEN_EXHAUSTED = false;
 
 /* ---------- Outcome fallback (legacy decks only) ---------- */
 function getKind(q, key) {
@@ -25,112 +19,81 @@ function getKind(q, key) {
 /* ---------- Build shuffled A/B/C answers for UI ---------- */
 function buildAnswers(q) {
   const S = State.getState();
-  const prev = S.questionHistory?.[String(q.id)];
-  const shuffled = shuffle(q.answers || []);
+  const previous = S.questionHistory?.[String(q.id)];
+  const selectedLabels = new Set(
+    Array.isArray(previous) ? previous : (previous ? [previous] : [])
+  );
+  const shuffled = shuffle([...(q.answers || [])]);
   const keys = ['A', 'B', 'C'];
   let answers = shuffled.slice(0, 3).map((a, i) => {
-    let label = a.label ?? '';
-    let cls   = String(a.answerClass || '').toUpperCase();
-    let expl  = a.explanation ?? '';
-
-    if (prev && label === prev) {
-      label = 'We heard you the first time.';
-      cls   = 'WRONG';
-      expl  = '';
-    }
-
-    return { key: keys[i], label: label || 'The words have faded.', answerClass: cls, explanation: expl || 'Nous offers no explanation.' };
+    const label = a.label ?? '';
+    return {
+      key: keys[i],
+      label: label || 'The words have faded.',
+      answerClass: String(a.answerClass || '').toUpperCase(),
+      explanation: a.explanation || 'Nous offers no explanation.',
+      unavailable: selectedLabels.has(label),
+    };
   });
 
   if (S.activePowerUps?.includes('REMOVE_WRONG_ANSWER')) {
-    const wrong = answers.findIndex(a => a.answerClass === OUTCOME.WRONG);
+    const wrong = answers.findIndex((answer) =>
+      answer.answerClass === OUTCOME.WRONG && !answer.unavailable
+    );
     if (wrong >= 0) answers.splice(wrong, 1);
     S.activePowerUps = S.activePowerUps.filter(p => p !== 'REMOVE_WRONG_ANSWER');
   }
   return answers;
 }
 
-/* ---------- Soft-bias helper ---------- */
-function weightForQuestion(q, preferGroups = [], s) {
-  let w = 1;
-
-  // Prefer groups signaled by traitRead.routingNudge
-  const groups = ID_TO_GROUPS.get(q.id) || new Set();
-  for (const g of preferGroups) {
-    if (groups.has(g)) w *= 2.25; // soft, multiplicative
-  }
-
-  // Gentle novelty bias: slightly bump tiers we’ve touched less
-  if (typeof q.tier === 'number') {
-    const seen = s.tierSeen?.[q.tier] || 0;
-    w *= 1 + Math.max(0, 0.15 - seen * 0.03);
-  }
-
-  // Tiny noise to avoid determinism
-  w *= 0.9 + Math.random() * 0.2;
-
-  return w;
-}
-
-function weightedPick(items, weightFn) {
-  const weights = items.map(weightFn);
-  const total = weights.reduce((a, b) => a + b, 0);
-  if (total <= 0) return items[(Math.random() * items.length) | 0];
-  let r = Math.random() * total;
-  for (let i = 0; i < items.length; i++) {
-    r -= weights[i];
-    if (r <= 0) return items[i];
-  }
-  return items[items.length - 1];
-}
-
-/* ---------- Draw next question (tier gating by difficultyLevel) ---------- */
+/* ---------- Draw from this round's finite packet, then recycle it ---------- */
 export function drawQuestion(_state) {
   const S = State.getState();
   const deck = S.questionDeck || [];
-  let answered = S.answeredQuestionIds || new Set();
+  const byId = new Map(deck.map((question) => [String(question.id), question]));
+  const roundIds = Array.isArray(S.roundQuestionIds) ? S.roundQuestionIds : [];
+  let drawPile = Array.isArray(S.roundDrawPile) ? [...S.roundDrawPile] : [];
+  let isRepeat = !!S.roundIsRecycling;
 
-  const maxTier = 7;
-  let tier = Math.max(1, Math.min(S.difficultyLevel || 1, maxTier));
-
-  const validPool = (t) =>
-    deck.filter(
-      (q) =>
-        (!answered.has(q.id) || ALLOW_REPEATS_WHEN_EXHAUSTED) &&
-        (!q.tier || q.tier <= t) &&
-        Array.isArray(q.answers) &&
-        q.answers.length >= 3
-    );
-
-  let pool = validPool(tier);
-  while (pool.length === 0 && tier < maxTier) {
-    tier += 1;
-    pool = validPool(tier);
+  if (!drawPile.length && roundIds.length) {
+    drawPile = shuffle([...roundIds]);
+    isRepeat = true;
   }
 
-  if (pool.length === 0) {
-    // exhausted all tiers → refresh but keep history
-    answered = new Set();
-    State.patch({ answeredQuestionIds: answered });
-    pool = validPool(tier);
-    if (pool.length === 0) return { question: null, answers: [], category: '' };
+  let q = null;
+  let answers = [];
+  while (drawPile.length && !q) {
+    const nextId = drawPile.shift();
+    const candidate = byId.get(String(nextId));
+    if (!candidate) continue;
+    const candidateAnswers = buildAnswers(candidate);
+    if (!candidateAnswers.some((answer) => !answer.unavailable)) continue;
+    q = candidate;
+    answers = candidateAnswers;
   }
 
-  // Soft bias from the trait read (group mind)
-  const prefer = S.traitRead?.routingNudge || [];
-  const q = prefer.length
-    ? weightedPick(pool, (item) => weightForQuestion(item, prefer, S))
-    : pool[(Math.random() * pool.length) | 0];
+  if (!q) {
+    return {
+      question: null,
+      answers: [],
+      category: '',
+      patch: { roundDrawPile: drawPile, roundIsRecycling: isRepeat },
+    };
+  }
 
-  // Track novelty stats per tier (optional; used above)
   const tierSeen = { ...(S.tierSeen || {}) };
   tierSeen[q.tier || 0] = (tierSeen[q.tier || 0] || 0) + 1;
-  State.patch({ tierSeen });
 
   return {
     question: q,
-    answers: buildAnswers(q),
+    answers,
     category: q.category || q.title || '',
+    patch: {
+      roundDrawPile: drawPile,
+      roundIsRecycling: isRepeat,
+      currentQuestionIsRepeat: isRepeat,
+      tierSeen,
+    },
   };
 }
 
@@ -155,6 +118,8 @@ export function evaluate(choiceIndex, _state) {
   tally[key] = (tally[key] || 0) + 1;
 
   const isNotWrong = (kind === 'TYPICAL' || kind === 'REVELATORY');
+  const isRepeat = !!S.currentQuestionIsRepeat;
+  const collectsTraits = !isRepeat && !S.tutorial?.active;
 
   // Exhaust this question id
   S.answeredQuestionIds?.add?.(q.id);
@@ -163,19 +128,24 @@ export function evaluate(choiceIndex, _state) {
   let historyPatch = null;
   if (a.label) {
     const hist = { ...(S.questionHistory || {}) };
-    hist[String(q.id)] = a.label;
+    const previous = hist[String(q.id)];
+    const selected = Array.isArray(previous) ? [...previous] : (previous ? [previous] : []);
+    if (!selected.includes(a.label)) selected.push(a.label);
+    hist[String(q.id)] = selected;
     historyPatch = hist;
   }
 
-  // Apply trait deltas
-  applyTraitDelta(q.id, kind, a.label);
+  // A recycled card constrains the choice, so it no longer contributes traits.
+  if (collectsTraits) applyTraitDelta(q.id, kind, a.label);
 
-  const choiceEvidence = [...(S.choiceEvidence || []), {
-    questionId: q.id,
-    questionText: q.text || q.title || 'A question without a name.',
-    chosenLabel: a.label || 'the unspoken answer',
-    kind,
-  }].slice(-12);
+  const choiceEvidence = !collectsTraits
+    ? (S.choiceEvidence || [])
+    : [...(S.choiceEvidence || []), {
+        questionId: q.id,
+        questionText: q.text || q.title || 'A question without a name.',
+        chosenLabel: a.label || 'the unspoken answer',
+        kind,
+      }].slice(-12);
 
   const weightIsActive = (S.activeRoundEffects || []).some(e => e.type === 'ROUND_MODIFIER' && e.modifier === 'WEIGHT');
   const fateThreadDelta = kind === OUTCOME.WRONG && weightIsActive ? -1 : 0;
@@ -204,13 +174,16 @@ export function evaluate(choiceIndex, _state) {
       threadDelta: (eff.threadDelta || 0) + fateThreadDelta,
       explanation: a.explanation || '',
       questionText: q.text || q.title || '',
+      questionId: q.id,
+      insert: q.insert || '',
+      isRepeat,
     },
   };
 
   if (historyPatch) patch.questionHistory = historyPatch;
 
   // Difficulty stepper
-  if (isNotWrong) {
+  if (isNotWrong && collectsTraits) {
     const count = (S.correctAnswersThisDifficulty || 0) + 1;
     if (count >= 2) {
       patch.difficultyLevel = Math.min((S.difficultyLevel || 1) + 1, 7);

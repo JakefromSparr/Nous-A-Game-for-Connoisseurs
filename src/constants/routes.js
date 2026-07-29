@@ -35,11 +35,15 @@ export const ROUTES = {
   [SCREENS.GAME_LOBBY]: {
     labels: [
       () => 'Turn Back',
-      // Tempt Fate is available only when there is NOT already a loaded round-long effect
-      s => (Array.isArray(s.activeRoundEffects) && s.activeRoundEffects.length > 0 ? 'NOUS' : 'Tempt Fate'),
+      s => {
+        if (s.firstEntryActive) return s.tasselTaken ? 'In Hand' : 'Take Tassel';
+        return Array.isArray(s.activeRoundEffects) && s.activeRoundEffects.length > 0
+          ? 'NOUS'
+          : 'Tempt Fate';
+      },
       () => 'Push On',
     ],
-    actions: ['back-to-welcome','tempt-fate','to-round-lobby'],
+    actions: ['back-to-welcome','parlor-middle','to-round-lobby'],
   },
 
   // ───────────── ROUND LOBBY ─────────────

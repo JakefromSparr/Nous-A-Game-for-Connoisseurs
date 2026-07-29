@@ -129,6 +129,18 @@ p, li {
 .answer-list { margin-top: 1rem; list-style: none; }
 #result-explanation,
 #result-outcome-message { margin-top: 1rem; }
+.result-insert {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(168, 141, 61, 0.45);
+  font-style: italic;
+  letter-spacing: 0.04em;
+}
+.parlor-message { margin: 0.5rem auto 1.5rem; max-width: 44ch; }
+.answer-unavailable {
+  opacity: 0.42;
+  text-decoration: line-through;
+}
 #fate-card-text { margin-bottom: 1rem; }
 .fate-choice-list { list-style: none; opacity: 0.85; }
 
@@ -253,6 +265,34 @@ p, li {
     0 0 0 3px var(--primary-bg),
     0 0 0 5px var(--gold-foil-light),
     0 0 20px var(--gold-foil-light);
+}
+
+.ctrl.intro-tie-ready:not(:disabled) {
+  animation: tieOffThrob 1.4s ease-in-out infinite;
+}
+
+@keyframes tieOffThrob {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow:
+      inset -5px -5px 10px rgba(0,0,0,0.7),
+      0 6px 18px var(--shadow-color);
+  }
+  50% {
+    transform: scale(1.06);
+    box-shadow:
+      inset -4px -4px 9px rgba(0,0,0,0.65),
+      0 0 26px rgba(245, 228, 194, 0.7);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ctrl.intro-tie-ready:not(:disabled) {
+    animation: none;
+    box-shadow:
+      0 0 0 3px var(--gold-foil-dark),
+      0 0 20px var(--gold-foil-light);
+  }
 }
 
 /* Disabled states: support :disabled, .disabled class, and aria-disabled */

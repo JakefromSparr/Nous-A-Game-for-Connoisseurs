@@ -113,6 +113,15 @@ export const UI = (() => {
       const round = document.getElementById('divinations-text-round');
       if (round) round.textContent = text;
     }
+
+    const tieButton = buttons[0];
+    if (tieButton) {
+      const introTieReady =
+        data.currentScreen === 'ROUND_LOBBY' &&
+        !!data.isIntroRound &&
+        (data.notWrongCount || 0) >= 1;
+      tieButton.classList.toggle('intro-tie-ready', introTieReady);
+    }
   }
 
   // Flexible: works with (q,answers[]) OR legacy q.choices.{A,B,C}
@@ -132,6 +141,12 @@ export const UI = (() => {
     const aA = $('answer-a');       if (aA) aA.textContent = arr[0]?.label ?? '';
     const aB = $('answer-b');       if (aB) aB.textContent = arr[1]?.label ?? '';
     const aC = $('answer-c');       if (aC) aC.textContent = arr[2]?.label ?? '';
+    [aA, aB, aC].forEach((answerElement, index) => {
+      const unavailable = !!arr[index]?.unavailable;
+      const row = answerElement?.closest('li');
+      if (row) row.classList.toggle('answer-unavailable', unavailable);
+      if (answerElement) answerElement.setAttribute('aria-disabled', String(unavailable));
+    });
   }
 
   function showFateCard(card) {
@@ -158,6 +173,11 @@ export const UI = (() => {
     const q1 = $('result-question');        if (q1) q1.textContent = r?.questionText ?? '';
     const a  = $('result-chosen-answer');   if (a)  a.textContent  = r?.chosenLabel  ?? '';
     const ex = $('result-explanation');     if (ex) ex.textContent = r?.explanation  ?? '';
+    const insert = $('result-insert');
+    if (insert) {
+      insert.textContent = r?.insert ?? '';
+      insert.hidden = !insert.textContent;
+    }
     const om = $('result-outcome-message'); if (om) om.textContent = outcomeMessage;
   }
 
@@ -238,6 +258,25 @@ export const UI = (() => {
     updatePDisp();
     if (flavor) { flavor.textContent = ''; flavor.hidden = true; }
     updateScreen('WAITING_ROOM');
+  };
+
+  const showGameLobby = (state = {}) => {
+    const message = $('parlor-message');
+    const divinationsRow = $('divinations-row');
+    if (!message) return;
+
+    if (state.firstEntryActive) {
+      message.textContent = state.tasselTaken
+        ? 'The tassel comes free more easily than it should.'
+        : 'A short length of thread lies beside the box, finished with a faded tassel. It may be taken. It may be left where it was found.';
+      message.hidden = false;
+      if (divinationsRow) divinationsRow.hidden = true;
+      return;
+    }
+
+    message.textContent = '';
+    message.hidden = true;
+    if (divinationsRow) divinationsRow.hidden = false;
   };
 
   /* ───── Coach overlay (render-only; tutorialEngine owns the script) ───── */
@@ -351,6 +390,7 @@ export const UI = (() => {
     /* participant dialog */
     showParticipantEntry,
     showWaitingRoom,
+    showGameLobby,
     adjustParticipantCount,
     confirmParticipants,
     showParticipantFlavor,

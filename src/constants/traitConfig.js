@@ -7,7 +7,7 @@
  */
 const GROUPS = Object.freeze({
   // Wordplay / ambiguous framing → pushes Y (conventional↔radical) & Z (figurative↔empirical)
-  lateral_wordplay:   [101,103,106,107,108,209],
+  lateral_wordplay:   ['001',103,106,107,108,209],
 
   // Straight fact / physics / calendar → pushes Z (empirical) and a bit X (analytical)
   factual_literal:    [102,105,201,203,206,207,208,401,402],

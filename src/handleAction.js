@@ -33,9 +33,13 @@ function renderScreenBody(target, st) {
   if (target === SCREENS.WAITING_ROOM) {
     UI.showWaitingRoom?.(st);
   }
+  if (target === SCREENS.GAME_LOBBY) {
+    UI.showGameLobby?.(st);
+  }
 }
 
 function applyResult({ patch, next } = {}) {
+  const previous = State.getState().currentScreen;
   if (patch) State.patch(patch);
 
   const current = State.getState().currentScreen;
@@ -43,6 +47,8 @@ function applyResult({ patch, next } = {}) {
 
   if (target !== current) {
     State.patch({ currentScreen: target });
+  }
+  if (next !== undefined || target !== previous) {
     UI.updateScreen(target);
   }
 
@@ -63,8 +69,15 @@ function applyResult({ patch, next } = {}) {
     if (target === SCREENS.FATE && st.fateChoices[i] == null && !st.tutorial?.active) return true;
 
     if (target === SCREENS.GAME_LOBBY && i === 1 && !st.tutorial?.active) {
+      if (st.firstEntryActive) return !!st.tasselTaken;
       const loaded = Array.isArray(st.activeRoundEffects) && st.activeRoundEffects.length > 0;
       return loaded;
+    }
+    if (target === SCREENS.ROUND_LOBBY && i === 0 && !st.tutorial?.active) {
+      return !Round.canTieOff(st);
+    }
+    if (target === SCREENS.QUESTION && st.currentAnswers?.[i]?.unavailable) {
+      return true;
     }
     return false;
   });
@@ -81,14 +94,18 @@ function doPull() {
 
   const afterPull = s.thread - 1;
   const draw = s.tutorial?.active ? Tutor.drawTutorialQuestion : Q.drawQuestion;
-  const { question, answers, category } = draw(s);
+  const { question, answers, category, patch: drawPatch } = draw(s);
 
   if (!question) {
-    return { patch: { thread: afterPull }, next: SCREENS.ROUND_LOBBY };
+    return {
+      patch: { thread: afterPull, ...(drawPatch || {}) },
+      next: SCREENS.ROUND_LOBBY,
+    };
   }
 
   return {
     patch: {
+      ...(drawPatch || {}),
       thread: afterPull,
       currentQuestion: question,
       currentAnswers : answers,
@@ -203,8 +220,13 @@ const ACTIONS = {
   },
 
   /* GAME LOBBY */
-  'tempt-fate' : () => {
+  'parlor-middle' : () => {
     const s = State.getState();
+    if (s.firstEntryActive) {
+      if (s.tasselTaken) return {};
+      return { patch: { tasselTaken: true } };
+    }
+
     const alreadyLoaded = Array.isArray(s.activeRoundEffects) && s.activeRoundEffects.length > 0;
     if (alreadyLoaded) return {};
 
@@ -223,6 +245,7 @@ const ACTIONS = {
   /* ROUND LOBBY */
   'tie-off' : () => {
     const s = State.getState();
+    if (!Round.canTieOff(s)) return {};
 
     const tied = Round.tieOff(s);
     const resolvedState = { ...s, ...tied };
@@ -302,7 +325,8 @@ const ACTIONS = {
     const fateRes = s.pendingFateResolution || Fate.resolveRound?.(s.roundAnswerTally, s.roundWon, s) || {};
     const patch   = Round.finalizeRound(s, fateRes);
 
-    const roundsWonNext = (s.roundsWon || 0) + (s.roundWon ? 1 : 0);
+    const roundsWonNext =
+      (s.roundsWon || 0) + (!s.isIntroRound && s.roundWon ? 1 : 0);
     const isFinal = roundsWonNext >= (s.roundsToWin || 3);
     const next = isFinal
       ? SCREENS.FINAL_READING

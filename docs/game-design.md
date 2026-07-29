@@ -44,7 +44,12 @@ But the game is really playing them.
 
 ### Round Lifecycle
 
-- **Start of round:** `thread = nextRoundT0 || baseT0` (baseT0 = **4**). Clears round scratch. (Any `ROUND_START` fate effects are applied here.)
+- **First Entry:** Uses the fixed tutorial packet `001`, `002`, `003`. Taking the tassel starts it with **4 Thread**; leaving it starts with **3**. One not-wrong answer unlocks Tie Off. This prologue banks score but does not count as one of the three required round wins.
+- **Start of a normal round:** Draw a temporary packet of **6 unanswered, non-tutorial cards** from the full deck. A future object or Fate effect may raise that packet size, capped at **10**.
+- **Unseen before repeated:** Every card in the round packet appears once before the packet is shuffled and recycled.
+- **Recycled answers:** An answer already chosen on that card is crossed out and cannot be chosen again.
+- **Measurement boundary:** Recycled cards still affect Thread, score, and round progress, but they do not add trait deltas or Reading evidence because the remaining choice is constrained.
+- **Thread:** Normal rounds use `nextRoundT0 || baseT0` (baseT0 = **4**). Any `ROUND_START` Fate effects are applied here.
 - **Continue past 3:** Hitting **3+ not‑wrong** does **not** auto‑end; players may keep pulling.
 - **End of round:** Only by **Tie Off** (player choice) or **Sever** (thread ≤ 0).
 - **Win condition:** Checked at end; **win** if `notWrongCount ≥ 3`.
@@ -90,9 +95,10 @@ export type Answer = {
 export type Question = {
   id: number | string;
   category: 'Mind' | 'Body' | 'Soul';
-  tier: 1 | 2 | 3;
+  tier: 0 | 1 | 2 | 3 | 4 | 5 | 6;
   title: string;
   text: string;
+  insert?: string;
   answers: [Answer, Answer, Answer];
 };
 
@@ -101,6 +107,8 @@ export default questions;
 ```
 
 - The engine shuffles `answers` and preserves `answerClass` & `explanation` for the **Reveal** screen.
+- Tier 0 is reserved for First Entry and the explicit Tutorial. Tier 0 cards never enter normal round packets.
+- Once a normal packet is dealt, its cards belong only to that round. Unseen cards remain eligible for a later round; answered cards do not.
 
 ### Fate Cards — `src/constants/fateDeck.js`
 
@@ -127,7 +135,9 @@ Supported `effect.type`s:
 - A button is disabled when:
   - Its mapped **action is `null`** (taunt).
   - **Fate** screen slot has **no choice** (renders NOUS).
-  - **Game Lobby** middle button has **no pending fate**.
+  - **Game Lobby** middle button represents a tassel already taken or a Fate choice already loaded.
+  - **Round Lobby** Tie Off has not yet met its answer threshold.
+  - A recycled answer has already been given.
 
 ---
 
