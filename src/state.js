@@ -39,7 +39,7 @@ function buildInitialState() {
     roundScore: 0,
     notWrongCount: 0,
     thread: 0,
-    nextRoundT0: DEFAULTS.baseT0,   // persisted for older saves; normal rounds reset to baseT0
+    nextRoundT0: DEFAULTS.baseT0,   // tassel may carry up to 2 unused Thread into the next round
     weavePrimed: false,             // spend thread to double next Q points
     pendingBank: 0,                 // reserved for future use (bank animations, etc.)
     isIntroRound: false,

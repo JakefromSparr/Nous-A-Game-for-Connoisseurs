@@ -78,7 +78,13 @@ export function startRound(state) {
   const isIntroRound = !!state.firstEntryActive;
   const t0 = isIntroRound
     ? (state.tasselTaken ? 4 : 3)
-    : DEFAULTS.baseT0;
+    : state.tasselTaken
+      ? clamp(
+        Number(state.nextRoundT0) || DEFAULTS.baseT0,
+        DEFAULTS.baseT0,
+        DEFAULTS.baseT0 + 2
+      )
+      : DEFAULTS.baseT0;
   const roundQuestions = prepareRoundQuestions(state, isIntroRound);
 
   // Apply any fate effects that trigger at round start (e.g., thread +1).
@@ -122,9 +128,13 @@ export function canTieOff(state) {
 }
 
 export function tieOff(state) {
+  const carriedThread = state.tasselTaken
+    ? clamp(Number(state.thread) || 0, 0, 2)
+    : 0;
+
   return {
     pendingBank: state.roundScore || 0,
-    nextRoundT0: DEFAULTS.baseT0,
+    nextRoundT0: DEFAULTS.baseT0 + carriedThread,
     roundEndedBy: 'TIE_OFF',
     roundWon: canTieOff(state),
   };

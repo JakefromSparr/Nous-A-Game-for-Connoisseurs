@@ -14,6 +14,8 @@ import { composeFinalReading } from '../src/engine/readingEngine.js';
 import { SCREENS } from '../src/constants/screens.js';
 import { ROUTES } from '../src/constants/routes.js';
 import questionDeck from '../src/constants/questionDeck.js';
+import { ID_TO_GROUPS } from '../src/constants/questionGroups.js';
+import { TRAIT_LOADINGS } from '../src/constants/traitConfig.js';
 
 function answer(kind, label = 'Potential') {
   State.resetGame();
@@ -254,18 +256,47 @@ test('Tier 5 cards stay gated until two normal rounds are won', () => {
   assert.deepEqual(prepareCrossroads(State.getState()).candidates, [102]);
 });
 
-test('normal rounds always reset to four Thread', () => {
-  const round = Round.startRound({
+test('normal rounds reset to four Thread unless the tassel carries up to two', () => {
+  const withoutTassel = Round.startRound({
     questionDeck,
     answeredQuestionIds: new Set(),
     firstEntryActive: false,
-    nextRoundT0: 9,
+    tasselTaken: false,
+    nextRoundT0: 6,
     activeRoundEffects: [],
     roundsWon: 0,
   });
 
-  assert.equal(round.thread, 4);
-  assert.equal(Round.tieOff({ roundScore: 3, notWrongCount: 3 }).nextRoundT0, 4);
+  const withTassel = Round.startRound({
+    questionDeck,
+    answeredQuestionIds: new Set(),
+    firstEntryActive: false,
+    tasselTaken: true,
+    nextRoundT0: 6,
+    activeRoundEffects: [],
+    roundsWon: 0,
+  });
+
+  assert.equal(withoutTassel.thread, 4);
+  assert.equal(withTassel.thread, 6);
+  assert.equal(Round.tieOff({
+    roundScore: 3,
+    notWrongCount: 3,
+    tasselTaken: false,
+    thread: 4,
+  }).nextRoundT0, 4);
+  assert.equal(Round.tieOff({
+    roundScore: 3,
+    notWrongCount: 3,
+    tasselTaken: true,
+    thread: 1,
+  }).nextRoundT0, 5);
+  assert.equal(Round.tieOff({
+    roundScore: 3,
+    notWrongCount: 3,
+    tasselTaken: true,
+    thread: 4,
+  }).nextRoundT0, 6);
 });
 
 test('Crossroads offers two packet cards and spends only the selected path', () => {
@@ -289,4 +320,30 @@ test('Crossroads offers two packet cards and spends only the selected path', () 
   const selected = drawQuestion(State.getState(), 103);
   assert.equal(selected.question.id, 103);
   assert.deepEqual(selected.patch.roundDrawPile, [102, 105]);
+});
+
+test('new Tier 1 and Tier 4 cards are valid and trait-routed', () => {
+  const expected = new Map([
+    [110, { tier: 1, classes: ['TYPICAL', 'REVELATORY', 'WRONG'] }],
+    [111, { tier: 1, classes: ['TYPICAL', 'REVELATORY', 'WRONG'] }],
+    [112, { tier: 1, classes: ['TYPICAL', 'REVELATORY', 'WRONG'] }],
+    [403, { tier: 4, classes: ['TYPICAL', 'WRONG', 'WRONG'] }],
+    [404, { tier: 4, classes: ['TYPICAL', 'WRONG', 'WRONG'] }],
+    [405, { tier: 4, classes: ['TYPICAL', 'WRONG', 'WRONG'] }],
+  ]);
+
+  assert.equal(new Set(questionDeck.map((question) => question.id)).size, questionDeck.length);
+
+  for (const [id, shape] of expected) {
+    const question = questionDeck.find((candidate) => candidate.id === id);
+    assert.ok(question, `question ${id} should exist`);
+    assert.equal(question.tier, shape.tier);
+    assert.equal(question.answers.length, 3);
+    assert.deepEqual(
+      question.answers.map((answer) => answer.answerClass),
+      shape.classes
+    );
+    assert.ok(ID_TO_GROUPS.get(id)?.size, `question ${id} should have a routing group`);
+    assert.ok(TRAIT_LOADINGS[id]?.axisWeight, `question ${id} should have trait weights`);
+  }
 });

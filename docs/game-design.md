@@ -45,13 +45,14 @@ But the game is really playing them.
 ### Round Lifecycle
 
 - **First Entry:** Uses the fixed tutorial packet `001`, `002`, `003`. Taking the tassel starts it with **4 Thread**; leaving it starts with **3**. One not-wrong answer unlocks Tie Off. This prologue banks score but does not count as one of the three required round wins.
+- **Tassel:** Normal rounds have a base of **4 Thread**. If the tassel was taken, Tie Off carries up to **2 unused Thread** into the next round, for a maximum starting Thread of **6**. Without the tassel, every normal round resets to **4**.
 - **Start of a normal round:** Draw a temporary packet of **6 unanswered, non-tutorial cards** from the full deck. A future object or Fate effect may raise that packet size, capped at **10**.
 - **Tier 5 gate:** Tier 5 cannot enter a packet until the group has won two normal rounds. Tiers 1–4 remain possible from the start.
 - **Crossroads:** Pull opens two paths from the current packet. Left and Right change the highlighted path; Select spends one Thread and reveals that card. When possible, the two paths show different categories. The unchosen card remains in the packet.
 - **Unseen before repeated:** Every card in the round packet appears once before the packet is shuffled and recycled.
 - **Recycled answers:** An answer already chosen on that card is crossed out and cannot be chosen again.
 - **Measurement boundary:** Recycled cards still affect Thread, score, and round progress, but they do not add trait deltas or Reading evidence because the remaining choice is constrained.
-- **Thread:** Every normal round resets to **4 Thread** before any `ROUND_START` Fate effects. Unspent Thread does not carry between rounds.
+- **Thread:** Every normal round has **4 base Thread** before any `ROUND_START` Fate effects. The tassel may add up to 2 Thread preserved at the previous Tie Off.
 - **Continue past 3:** Hitting **3+ not‑wrong** does **not** auto‑end; players may keep pulling.
 - **End of round:** Only by **Tie Off** (player choice) or **Sever** (thread ≤ 0).
 - **Win condition:** Checked at end; **win** if `notWrongCount ≥ 3`.
@@ -60,7 +61,7 @@ But the game is really playing them.
 
 - **Tie Off:**
   - `pendingBank = roundScore` (do **not** add to global score yet).
-  - Reset the next normal round to the standard **4 Thread**.
+  - Set the next normal round to **4 Thread**, plus up to **2 unused Thread** if the tassel was taken.
   - Record whether round was won (`notWrongCount ≥ 3`).
 - **Sever:** `pendingBank = 0`, `lives -= 1`. The next normal round still begins at the standard **4 Thread**.
 - **Global score:** Updated **only** at **Fate Resolution**.
