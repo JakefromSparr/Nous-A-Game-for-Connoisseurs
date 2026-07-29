@@ -7,13 +7,13 @@
  */
 const GROUPS = Object.freeze({
   // Wordplay / ambiguous framing → pushes Y (conventional↔radical) & Z (figurative↔empirical)
-  lateral_wordplay:   ['001',103,106,107,108,209],
+  lateral_wordplay:   ['001',103,106,107,108,112,209],
 
   // Straight fact / physics / calendar → pushes Z (empirical) and a bit X (analytical)
-  factual_literal:    [102,105,201,203,206,207,208,401,402],
+  factual_literal:    [102,105,201,203,206,207,208,401,402,403,404,405],
 
   // Framing / morality / risk appetite → pushes Y primarily
-  framing_morality:   [104,109,202,204,205],
+  framing_morality:   [104,109,110,111,202,204,205],
 
   // Dread / perception / horror → pushes Z (figurative) and a touch of Y
   uncanny_perception: [301,302,303],

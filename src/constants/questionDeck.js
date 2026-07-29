@@ -315,6 +315,87 @@ const questions = [
       },
     ],
   },
+  {
+    id: 110,
+    category: 'Soul',
+    tier: 1,
+    title: 'Over the Line',
+    text: 'What happens when you cross a line?',
+    answers: [
+      {
+        label: 'You reach the other side.',
+        answerClass: 'TYPICAL',
+        explanation:
+          'Spatially correct. Crossing a line places you beyond it.',
+      },
+      {
+        label: 'You get in trouble.',
+        answerClass: 'REVELATORY',
+        explanation:
+          'Socially correct. Some lines are boundaries upheld by other people.',
+      },
+      {
+        label: 'You erase it.',
+        answerClass: 'WRONG',
+        explanation:
+          'Crossing a boundary does not make it disappear. Convenient though that would be.',
+      },
+    ],
+  },
+  {
+    id: 111,
+    category: 'Soul',
+    tier: 1,
+    title: 'Look Up',
+    text: 'What do you see when you look up to someone?',
+    answers: [
+      {
+        label: 'Someone above you.',
+        answerClass: 'TYPICAL',
+        explanation:
+          'Literally correct. Looking upward requires something to be above your position.',
+      },
+      {
+        label: 'Someone you admire.',
+        answerClass: 'REVELATORY',
+        explanation:
+          'Socially correct. Looking up to someone means regarding them with admiration.',
+      },
+      {
+        label: 'Someone better than you.',
+        answerClass: 'WRONG',
+        explanation:
+          'Admiration does not require inferiority. You supplied the ranking yourself.',
+      },
+    ],
+  },
+  {
+    id: 112,
+    category: 'Mind',
+    tier: 1,
+    title: 'Your Word',
+    text: 'What do you give someone when you give them your word?',
+    answers: [
+      {
+        label: 'A promise.',
+        answerClass: 'TYPICAL',
+        explanation:
+          'The familiar meaning. Your word is a promise, and promises are meant to bind.',
+      },
+      {
+        label: 'Something to say.',
+        answerClass: 'REVELATORY',
+        explanation:
+          'The literal transaction. You gave them a word: something to say, and perhaps a small piece of your mind.',
+      },
+      {
+        label: 'A literal piece of your mind.',
+        answerClass: 'WRONG',
+        explanation:
+          'A literal piece? No. Keep that where it is.',
+      },
+    ],
+  },
 
   // ─────────────────── Tier 2 ───────────────────
   {
@@ -695,6 +776,87 @@ const questions = [
        }, 
      ], 
    },
+  {
+    id: 403,
+    category: 'Soul',
+    tier: 4,
+    title: 'Very Pleased',
+    text: 'The phrase “pleased as Punch” originally refers to what?',
+    answers: [
+      {
+        label: 'A violent puppet',
+        answerClass: 'TYPICAL',
+        explanation:
+          'Correct. Punch, of Punch and Judy, grins through his own appalling behavior. Pleased with himself. Always.',
+      },
+      {
+        label: 'A victorious boxer',
+        answerClass: 'WRONG',
+        explanation:
+          'A satisfying explanation. Unfortunately, the wrong Punch.',
+      },
+      {
+        label: 'A celebratory drink',
+        answerClass: 'WRONG',
+        explanation:
+          'You followed the party and missed the puppet show.',
+      },
+    ],
+  },
+  {
+    id: 404,
+    category: 'Body',
+    tier: 4,
+    title: 'In The Baguette',
+    text: 'What did the word “biscuit” originally describe?',
+    answers: [
+      {
+        label: 'Bread cooked twice',
+        answerClass: 'TYPICAL',
+        explanation:
+          'Correct. From the Latin bis coctus: cooked twice. The word remembers the second fire, even when the biscuit does not.',
+      },
+      {
+        label: 'Bread broken into portions',
+        answerClass: 'WRONG',
+        explanation:
+          'A reasonable ritual. The wrong root.',
+      },
+      {
+        label: 'A small cake served quickly',
+        answerClass: 'WRONG',
+        explanation:
+          'You defined the object in front of you and ignored the older word beneath it.',
+      },
+    ],
+  },
+  {
+    id: 405,
+    category: 'Mind',
+    tier: 4,
+    title: 'The Borrowed Bard',
+    text: 'Which phrase does not appear in the works of William Shakespeare?',
+    answers: [
+      {
+        label: 'A sight for sore eyes',
+        answerClass: 'TYPICAL',
+        explanation:
+          'Correct. Swift recorded a near form more than a century after Shakespeare. The familiar wording came later still.',
+      },
+      {
+        label: 'What the dickens',
+        answerClass: 'WRONG',
+        explanation:
+          'The name misled you. Shakespeare used it long before Charles Dickens was born.',
+      },
+      {
+        label: 'Knock, knock! Who’s there?',
+        answerClass: 'WRONG',
+        explanation:
+          'The modern joke came later. The knock and the question are already waiting in Macbeth.',
+      },
+    ],
+  },
 
 // ─────────────────── Tier 5 ───────────────────
 {

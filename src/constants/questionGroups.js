@@ -3,9 +3,9 @@
 // (These mirror the clusters in traitConfig; no trait math here.)
 
 export const QUESTION_GROUPS = Object.freeze({
-  lateral_wordplay:   ['001',103,106,107,108,209],
-  factual_literal:    [102,105,201,203,206,207,208,401,402],
-  framing_morality:   [104,109,202,204,205],
+  lateral_wordplay:   ['001',103,106,107,108,112,209],
+  factual_literal:    [102,105,201,203,206,207,208,401,402,403,404,405],
+  framing_morality:   [104,109,110,111,202,204,205],
   uncanny_perception: [301,302,303],
   tier5_introspection:[501,502,503,504,505,506],
 });
