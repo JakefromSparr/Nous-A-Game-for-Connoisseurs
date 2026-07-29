@@ -9,6 +9,7 @@ import * as Fate    from './engine/fateEngine.js';
 import * as Round   from './engine/roundEngine.js';
 import * as Tutor   from './engine/tutorialEngine.js';
 import { getObservedPresenceLine } from './engine/grinEngine.js';
+import { composeFinalReading } from './engine/readingEngine.js';
 
 /* ---------------- helpers ---------------- */
 
@@ -27,6 +28,8 @@ function renderScreenBody(target, st) {
     const summary = st.roundSummary;
     if (summary?.fateText) UI.showFateResult?.(summary.fateText);
   }
+  if (target === SCREENS.THREAD_SEVERED) UI.showFailure?.(st.lostRoundPoints || 0);
+  if (target === SCREENS.FINAL_READING) UI.showFinalReading?.(st.finalReading);
   if (target === SCREENS.WAITING_ROOM) {
     UI.showWaitingRoom?.(st);
   }
@@ -48,7 +51,7 @@ function applyResult({ patch, next } = {}) {
 
   // Tutorial override: show [Back, Next, Skip] while tutorial overlay is active.
   let labels;
-  if (st.tutorial?.active) {
+  if (st.tutorial?.active && ![SCREENS.QUESTION, SCREENS.REVEAL].includes(target)) {
     labels = ['Back','Next','Skip'];
   } else {
     labels = cfg.labels.map(l => (typeof l === 'function' ? l(st) : l));
@@ -151,9 +154,9 @@ const ACTIONS = {
   /* OPTIONS — matches your routes */
   'options-next-difficulty' : () => {
     const s = State.getState();
-    const cur = Math.max(1, Math.min(7, Number(s.difficultyLevel || 1)));
-    const next = cur >= 7 ? 1 : cur + 1;
-    State.patch({ difficultyLevel: next });
+    const cur = Math.max(1, Math.min(3, Number(s.startingDifficulty || 1)));
+    const next = cur >= 3 ? 1 : cur + 1;
+    State.patch({ difficultyLevel: next, startingDifficulty: next });
     return {};
   },
   'options-select' : () => ({ next: SCREENS.WELCOME }),
@@ -236,8 +239,11 @@ const ACTIONS = {
   'tie-off' : () => {
     const s = State.getState();
 
+    const tied = Round.tieOff(s);
+    const resolvedState = { ...s, ...tied };
+
     // Build summary for the FATE_RESULT screen; do not finalize yet.
-    const fateRes = Fate.resolveRound?.(s.roundAnswerTally, s.roundWon, s) || { summaryText: '' };
+    const fateRes = Fate.resolveRound?.(s.roundAnswerTally, tied.roundWon, resolvedState) || { summaryText: '' };
     const roundPoints = s.roundScore || 0;
 
     const summary = {
@@ -247,7 +253,7 @@ const ACTIONS = {
     };
 
     const patch = {
-      roundSummary: summary,
+      ...tied, roundSummary: summary,
       pendingFateResolution: fateRes,
     };
 
@@ -312,19 +318,26 @@ const ACTIONS = {
     const patch   = Round.finalizeRound(s, fateRes);
 
     const roundsWonNext = (s.roundsWon || 0) + (s.roundWon ? 1 : 0);
-    const next = roundsWonNext >= (s.roundsToWin || 3)
+    const isFinal = roundsWonNext >= (s.roundsToWin || 3);
+    const next = isFinal
       ? SCREENS.FINAL_READING
       : SCREENS.GAME_LOBBY;
 
     // Clean up summary
     patch.roundSummary = null;
     patch.pendingFateResolution = null;
+    if (isFinal) patch.finalReading = composeFinalReading(s);
 
     return { patch, next };
   },
 
   /* THREAD SEVERED */
-  'sever-ack'   : () => ({ next: SCREENS.GAME_LOBBY }),
+  'sever-ack'   : () => {
+    const s = State.getState();
+    const patch = Round.finalizeRound(s, {});
+    if (s.lives <= 0) patch.finalReading = composeFinalReading(s);
+    return { patch, next: s.lives <= 0 ? SCREENS.FINAL_READING : SCREENS.GAME_LOBBY };
+  },
 
   /* FINAL READING / META */
   'reading-a'   : () => ({}),
@@ -346,7 +359,7 @@ export function handleAction(btnIndex) {
   const state = State.getState();
 
   // Tutorial take-over: buttons are [Back, Next, Skip]
-  if (state.tutorial?.active) {
+  if (state.tutorial?.active && ![SCREENS.QUESTION, SCREENS.REVEAL].includes(state.currentScreen)) {
     if (btnIndex === 0) {
       Tutor.prevStep?.();
     } else if (btnIndex === 1) {

@@ -5,7 +5,7 @@ import { TRAIT_LOADINGS } from '../constants/traitConfig.js';
 import { CLASS_TRAIT_BASE } from '../constants/answerLogic.js';
 
 // ---- helpers ----
-const toTitle = (u) => (u ? u[0] + u.slice(1).toLowerCase() : '');
+const normalizeClass = (value) => String(value || '').toUpperCase();
 
 /**
  * Ensure trait-related fields exist in state.
@@ -13,7 +13,7 @@ const toTitle = (u) => (u ? u[0] + u.slice(1).toLowerCase() : '');
 export function ensureTraitState() {
   const S = State.getState();
   if (!S.traits) S.traits = { X: 0, Y: 0, Z: 0 };
-  if (!S.classTally) S.classTally = { Typical: 0, Revelatory: 0, Wrong: 0 };
+  if (!S.classTally) S.classTally = { TYPICAL: 0, REVELATORY: 0, WRONG: 0 };
   if (!S.traitRead) S.traitRead = null;
   return S;
 }
@@ -27,13 +27,13 @@ export function ensureTraitState() {
 export function applyTraitDelta(questionId, kindUpper, chosenLabel) {
   const S = ensureTraitState();
 
-  const titleKey = toTitle(kindUpper); // 'TYPICAL' -> 'Typical'
+  const classKey = normalizeClass(kindUpper);
   const cfg      = TRAIT_LOADINGS[questionId] || {};
   const weight   = cfg.axisWeight || {}; // {X?,Y?,Z?}
-  const ovClass  = cfg.overrides?.[titleKey] || null;
+  const ovClass  = cfg.overrides?.[classKey] || null;
   const ovAns    = chosenLabel && cfg.overridesByAnswer?.[chosenLabel] || null;
 
-  const base     = CLASS_TRAIT_BASE[titleKey] || { X: 0, Y: 0, Z: 0 };
+  const base     = CLASS_TRAIT_BASE[classKey] || { X: 0, Y: 0, Z: 0 };
 
   ['X','Y','Z'].forEach(axis => {
     const w  = (weight[axis] != null) ? weight[axis] : 1;
@@ -43,7 +43,7 @@ export function applyTraitDelta(questionId, kindUpper, chosenLabel) {
   });
 
   // Tally by class for meta/signals
-  S.classTally[titleKey] = (S.classTally[titleKey] || 0) + 1;
+  S.classTally[classKey] = (S.classTally[classKey] || 0) + 1;
 
   // Update read & cache to state
   S.traitRead = computeTraitRead(S);
@@ -56,9 +56,9 @@ export function applyTraitDelta(questionId, kindUpper, chosenLabel) {
 export function computeTraitRead(S0) {
   const S = S0 || State.getState();
   const { X = 0, Y = 0, Z = 0 } = S.traits || {};
-  const t = S.classTally || { Typical:0, Revelatory:0, Wrong:0 };
+  const t = S.classTally || { TYPICAL:0, REVELATORY:0, WRONG:0 };
 
-  const n = (t.Typical|0) + (t.Revelatory|0) + (t.Wrong|0);
+  const n = (t.TYPICAL|0) + (t.REVELATORY|0) + (t.WRONG|0);
   const norm = Math.sqrt(X*X + Y*Y + Z*Z) / (9 * Math.sqrt(3));
   const confidence = norm * Math.sqrt(n / (n + 6));
 
@@ -125,7 +125,7 @@ function pickIntrusionLine(X, Y, Z, tally, c) {
   if (Y >= 3) {
     return "One of you keeps tugging the plan sideways. They’re usually right… at first.";
   }
-  if ((tally.Wrong|0) >= 3 && (tally.total|0) >= 6) {
+  if ((tally.WRONG|0) >= 3 && (tally.total|0) >= 6) {
     return "Stop performing for each other. I already know.";
   }
   return null;

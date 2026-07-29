@@ -28,7 +28,7 @@ function buildAnswers(q) {
   const prev = S.questionHistory?.[String(q.id)];
   const shuffled = shuffle(q.answers || []);
   const keys = ['A', 'B', 'C'];
-  return shuffled.slice(0, 3).map((a, i) => {
+  let answers = shuffled.slice(0, 3).map((a, i) => {
     let label = a.label ?? '';
     let cls   = String(a.answerClass || '').toUpperCase();
     let expl  = a.explanation ?? '';
@@ -39,8 +39,15 @@ function buildAnswers(q) {
       expl  = '';
     }
 
-    return { key: keys[i], label, answerClass: cls, explanation: expl };
+    return { key: keys[i], label: label || 'The words have faded.', answerClass: cls, explanation: expl || 'Nous offers no explanation.' };
   });
+
+  if (S.activePowerUps?.includes('REMOVE_WRONG_ANSWER')) {
+    const wrong = answers.findIndex(a => a.answerClass === OUTCOME.WRONG);
+    if (wrong >= 0) answers.splice(wrong, 1);
+    S.activePowerUps = S.activePowerUps.filter(p => p !== 'REMOVE_WRONG_ANSWER');
+  }
+  return answers;
 }
 
 /* ---------- Soft-bias helper ---------- */
@@ -161,17 +168,28 @@ export function evaluate(choiceIndex, _state) {
   }
 
   // Apply trait deltas
-  applyTraitDelta(q.id, kind);
+  applyTraitDelta(q.id, kind, a.label);
+
+  const choiceEvidence = [...(S.choiceEvidence || []), {
+    questionId: q.id,
+    questionText: q.text || q.title || 'A question without a name.',
+    chosenLabel: a.label || 'the unspoken answer',
+    kind,
+  }].slice(-12);
+
+  const weightIsActive = (S.activeRoundEffects || []).some(e => e.type === 'ROUND_MODIFIER' && e.modifier === 'WEIGHT');
+  const fateThreadDelta = kind === OUTCOME.WRONG && weightIsActive ? -1 : 0;
 
   const patch = {
     // scores/thread
     roundScore: (S.roundScore || 0) + gainedPts,
-    thread: (S.thread || 0) + (eff.threadDelta || 0),
+    thread: (S.thread || 0) + (eff.threadDelta || 0) + fateThreadDelta,
     weavePrimed: false,
 
     // tallies + bookkeeping
     roundAnswerTally: tally,
     notWrongCount: (S.notWrongCount || 0) + (isNotWrong ? 1 : 0),
+    choiceEvidence,
 
     // keep current question/answers for REVEAL UI
     currentQuestion: S.currentQuestion,
@@ -183,7 +201,7 @@ export function evaluate(choiceIndex, _state) {
       chosenKey: key,
       chosenLabel: a.label || key,
       pointsGained: gainedPts,
-      threadDelta: eff.threadDelta || 0,
+      threadDelta: (eff.threadDelta || 0) + fateThreadDelta,
       explanation: a.explanation || '',
       questionText: q.text || q.title || '',
     },

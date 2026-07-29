@@ -54,6 +54,7 @@ export function tieOff(state) {
 
 export function sever(state) {
   return {
+    lostRoundPoints: state.roundScore || 0,
     pendingBank: 0,
     lives: Math.max(0, (state.lives || 0) - 1),
     nextRoundT0: null,
@@ -91,6 +92,7 @@ export function finalizeRound(state, fateResolution = {}) {
     fateChoices: [null, null, null],
 
     activeRoundEffects: [], // <-- unlock Tempt Fate again in Game Lobby
+    activePowerUps: [],
     roundEndedBy: null,
     roundWon: false,
   };
