@@ -1,5 +1,7 @@
 node_modules/
-main/devSuite/node_modules/
-main/devSuite/package-lock.json
-# ignore logs
-npm-debug.log*
+dist/
+coverage/
+
+.DS_Store
+Thumbs.db
+*.log

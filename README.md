@@ -1,78 +1,62 @@
 # NOUS — A Game for Connoisseurs
 
-A haunted, single‑mind trivia prototype built with **Vite** + vanilla JS.\
-Three on‑screen (or physical) buttons. One shared will. The deck watches back.
+A haunted, single-mind trivia game. The group shares three buttons, one Thread, and one final Reading.
 
----
+[Play NOUS](https://nous-a-game-for-connoisseurs.vercel.app/)
 
+## What runs in production
 
----
+NOUS is a static browser app: HTML, CSS, and vanilla JavaScript. It has no backend, database, or Node server.
 
-## Project Layout
+npm and Vite are development tools only. They install the two project dependencies, run tests, and turn the source into the static `dist/` folder that Vercel hosts.
 
-```text
-.
-├─ index.html                 # All UI screens + 3-button controller
-├─ style.css                  # Theming and layout
-├─ netlify.toml               # Deployment configuration
-├─ vite.config.js             # Vite build configuration (base: './')
-├─ src/
-│  ├─ script.js               # App entry: loads data, binds controller, saves on unload
-│  ├─ state.js                # Single state store, save/load, initialization
-│  ├─ ui.js                   # Pure presentation (DOM updates only)
-│  ├─ handleAction.js         # Central router (0-based buttons → actions)
-│  ├─ validator.js            # Zod schemas (persisted <-> runtime Sets)
-│  ├─ constants/
-│  │  ├─ screens.js           # Canonical screen IDs
-│  │  ├─ routes.js            # 3 labels + 3 actions per screen (null = taunt)
-│  │  ├─ answerLogic.js       # OUTCOME / WEAVE tables
-│  │  ├─ questionDeck.js      # Normalized JS deck (export default Question[])
-│  │  └─ fateDeck.js          # Fate cards (export default FateCard[])
-│  └─ engine/
-│     ├─ questionEngine.js    # Draw/evaluate questions → lastOutcome for REVEAL
-│     ├─ fateEngine.js        # Arm/apply fate choices; resolveRound modifiers
-│     └─ roundEngine.js       # startRound / tieOff / sever / finalize(+fate)
-└─ aboutNous.md               # Theme, philosophy, and detailed mechanics
+## Run locally
+
+```sh
+npm install
+npm run dev
 ```
 
----
+## Verify a change
 
-## Controls
+```sh
+npm test
+npm run build
+```
 
-- Exactly **three buttons**, indexed **0, 1, 2** (`btn0`, `btn1`, `btn2`).
-- Each screen defines **three labels and three actions** in `src/constants/routes.js`.
-- A `null` action is a deliberate **taunt** (renders “NOUS”, disabled).
+## Project map
 
----
+```text
+index.html                 Screens and three-button controller
+style.css                  Visual design and responsive layout
 
-## Save / Load
+src/
+  script.js                Browser entry point
+  state.js                 State, save/load, and game initialization
+  handleAction.js          Maps button presses to game actions
+  ui.js                    DOM rendering
+  validator.js             Saved-state validation
+  constants/               Questions, Fate cards, routes, and written content
+  engine/                  Question, Fate, round, trait, tutorial, and Reading rules
 
-- Game state auto‑saves to `localStorage["nous-save"]`.
-- To reset: DevTools → **Application** → **Local Storage** → remove `nous-save`.
+test/
+  game.test.js             Core-loop regression tests
 
----
+docs/
+  game-design.md           Rules and design blueprint
+  question-craft.md        Question-writing guide
+  voice-design.md          Nous voice and haunting system
+```
 
-## Notes for Contributors
+## Deployment
 
-- **UI is dumb.** All logic routes through `handleAction.js` → engines → `State.patch()`.
-- **Round start** is owned by `roundEngine.startRound()` (single source of truth).
-- **Reveal screen** renders from `lastOutcome` produced by `questionEngine.evaluate()`.
-- **Fate** math is applied at **FATE\_RESULT → Accept** via `fateEngine.resolveRound()` and `roundEngine.finalizeRound()`.
+Vercel should use the standard Vite settings:
 
-See **aboutNous.md** for the design blueprint (thread rules, weave, fate types, data formats).
+- Build command: `npm run build`
+- Output directory: `dist`
 
----
+No platform-specific application code is required.
 
-## License / Rights
+## Rights
 
-All code, game systems, written content, and mechanics are © **Sparr Games LLC**.\
-Internal prototype for playtesting and demonstration only. No redistribution without permission.
-
----
-
-## Final Reminder
-
-This is not a tool.\
-This is an *experience*.\
-Preserve the magic.
-
+All code, game systems, written content, and mechanics are © Sparr Games LLC. Internal prototype for playtesting and demonstration only. No redistribution without permission.

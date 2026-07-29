@@ -11,14 +11,4 @@ export function shuffle(arr) {
   return arr;
 }
 
-/** Inclusive random integer helper (0-max by default). */
-export function randInt(max, min = 0) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-/** Return a random element from an array (undefined if empty). */
-export function sample(arr) {
-  return arr.length ? arr[randInt(arr.length - 1)] : undefined;
-}
-
 export const clamp = (n,min,max)=>Math.min(max,Math.max(min,n));

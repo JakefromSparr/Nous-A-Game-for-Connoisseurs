@@ -1,7 +1,3 @@
-/* ===== (optional) Google Fonts =====
-   If you prefer <link> tags in index.html, remove this @import. */
-@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=EB+Garamond:wght@400;500;600&display=swap');
-
 /* ===== CSS Variables ===== */
 :root {
   --primary-bg: #0b0b0b;
@@ -119,6 +115,22 @@ p, li {
   margin-bottom: 2rem;
   opacity: 0.85;
 }
+
+#difficulty-block { margin: 1rem 0 2rem; }
+#difficulty-gauge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+#difficulty-meter { width: 260px; height: 1rem; }
+.difficulty-key { margin-top: 0.5rem; opacity: 0.85; }
+#round-hud { margin-bottom: 1rem; }
+.answer-list { margin-top: 1rem; list-style: none; }
+#result-explanation,
+#result-outcome-message { margin-top: 1rem; }
+#fate-card-text { margin-bottom: 1rem; }
+.fate-choice-list { list-style: none; opacity: 0.85; }
 
 
 /* ===== Waiting Room observed-presence receipt ===== */
@@ -307,31 +319,27 @@ p, li {
   }
 }
 /* ===== Tutorial / Coach Overlay System ===== */
-
-/* The full-screen dimming and blur layer. It sits behind everything else. */
 .coach-overlay {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.65);
   backdrop-filter: blur(3px);
-  z-index: 999; /* Sits above normal UI, but below the highlight. */
+  z-index: 999;
 }
 
-/* Add this class to the element you want to highlight. */
 .coach-highlight {
-  position: relative; /* This is crucial for z-index to work! */
-  z-index: 1000;      /* Lifts the element above the blur/dim overlay. */
+  position: relative;
+  z-index: 1000;
   outline: 3px solid var(--gold-foil-light);
   box-shadow:
     0 0 0 6px rgba(245, 228, 194, 0.15),
     0 0 25px 5px var(--gold-foil-light);
-  border-radius: 12px; /* Adjust as needed to match the element shape. */
+  border-radius: 12px;
 }
 
-/* The text box that explains the highlighted element. */
 .coach-callout {
   position: absolute;
-  z-index: 1100; /* Sits on top of everything. */
+  z-index: 1100;
   
   max-width: 440px;
   background: #0c0b0a;

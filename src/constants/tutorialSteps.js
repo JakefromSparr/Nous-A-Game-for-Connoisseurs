@@ -1,14 +1,5 @@
 import { SCREENS } from './screens.js';
-import { State } from '../state.js';
 
-/** Advance tutorial step (call after a reveal accept if you like) */
-export function advanceStep() {
-  const s = State.getState();
-  const cur = s.tutorial?.step ?? 0;
-  State.patch({ tutorial: { ...(s.tutorial || {}), step: cur + 1 } });
-}
-
-// Minimal step model. You can extend with `when(state)` to gate by screen/phase.
 export const COACH_STEPS = [
   {
     id: 'welcome-1',

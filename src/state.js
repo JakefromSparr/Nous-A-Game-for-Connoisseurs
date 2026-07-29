@@ -8,7 +8,7 @@ import { validateOnLoad, sanitizeBeforeSave } from './validator.js';
 export const DEFAULTS = {
   baseT0: 4,           // starting thread for Round 1
   roundsToWin: 3,      // how many rounds to win the game
-  threadCapBase: 5,    // not yet used; placeholder for future caps
+  threadCapBase: 5,
 };
 
 const emptyTally = () => ({ A: 0, B: 0, C: 0 });
@@ -58,8 +58,6 @@ function buildInitialState() {
     /* ---- Fate state ---- */
     activeRoundEffects: [],
     activePowerUps: [],
-    currentFateCard: null,
-    pendingFateCard: null,
     activeFateCard: null,
     fateChoices: [null, null, null],
 
@@ -73,7 +71,6 @@ function buildInitialState() {
     traits: { X: 0, Y: 0, Z: 0 },                  // running vector (-9..+9 clamp applied elsewhere)
     classTally: { TYPICAL: 0, REVELATORY: 0, WRONG: 0 }, // optional running counts by outcome class
     traitRead: null,                                // { routingNudge: string[], flavor: string, ... } (ephemeral)
-    traitSummary: null,                             // last computed summary blob (ephemeral, safe to drop)
     finalReading: null,
     tierSeen: {},                                   // novelty stats per tier (used by soft-bias)
 
@@ -82,7 +79,7 @@ function buildInitialState() {
     roundWon: false,
 
     /* ---- Tutorial (non-persistent) ---- */
-    tutorial: { active: false, step: 0, lastQ: null },
+    tutorial: { active: false, step: 0, awaitRevealToAdvance: false },
   };
 }
 
@@ -123,7 +120,11 @@ const loadGame = () => {
 
     // Merge parsed data into current shape (keeps any new runtime fields),
     // but always reset transient tutorial/session fields as desired.
-    gameState = { ...gameState, ...res.data, tutorial: { active: false, step: 0, lastQ: null } };
+    gameState = {
+      ...gameState,
+      ...res.data,
+      tutorial: { active: false, step: 0, awaitRevealToAdvance: false },
+    };
     return true;
   } catch (e) {
     console.warn('[LOAD] failed to parse save, starting fresh', e);
@@ -196,8 +197,6 @@ function initializeGame(participants = 1) {
     // Fate state
     activeRoundEffects: [],
     activePowerUps: [],
-    currentFateCard: null,
-    pendingFateCard: null,
     activeFateCard: null,
     fateChoices: [null, null, null],
 
@@ -211,7 +210,6 @@ function initializeGame(participants = 1) {
     traits: { X: 0, Y: 0, Z: 0 },
     classTally: { TYPICAL: 0, REVELATORY: 0, WRONG: 0 },
     traitRead: null,
-    traitSummary: null,
     finalReading: null,
     tierSeen: {},
 
@@ -220,7 +218,7 @@ function initializeGame(participants = 1) {
     roundWon: false,
 
     // Tutorial (explicitly off at a new game start)
-    tutorial: { active: false, step: 0, lastQ: null },
+    tutorial: { active: false, step: 0, awaitRevealToAdvance: false },
   });
 }
 

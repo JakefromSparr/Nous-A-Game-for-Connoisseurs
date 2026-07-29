@@ -79,9 +79,7 @@ export const persistedGameStateSchema = z.object({
   activeRoundEffects: z.array(ActiveRoundEffect),
   activePowerUps: z.array(z.string()),
 
-  // Fate scaffolding
-  currentFateCard: FateRef,
-  pendingFateCard: FateRef,
+  // Fate state
   activeFateCard: FateRef,
   fateChoices: z.array(z.any().nullable()).length(3),
 
@@ -104,7 +102,6 @@ export const persistedGameStateSchema = z.object({
     WRONG: z.number().int().min(0),
   }).default({ TYPICAL: 0, REVELATORY: 0, WRONG: 0 }),
   traitRead: z.any().nullable().default(null),
-  traitSummary: z.any().nullable().default(null),
   tierSeen: z.record(z.string(), z.number()).default({}),
   finalReading: z.any().nullable().default(null),
   pendingFateResolution: z.any().nullable().optional(),
@@ -114,22 +111,12 @@ export const persistedGameStateSchema = z.object({
 
   roundEndedBy: z.enum(['TIE_OFF', 'SEVER']).nullable(),
   roundWon: z.boolean(),
-})
-.superRefine((s, ctx) => {
+}).superRefine((s, ctx) => {
   if (s.roundsWon > s.roundsToWin) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: 'roundsWon cannot exceed roundsToWin',
       path: ['roundsWon'],
-    });
-  }
-  // Only one fate slot at a time
-  const slots = [s.currentFateCard, s.pendingFateCard, s.activeFateCard].filter(Boolean).length;
-  if (slots > 1) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'Only one fate card slot should be occupied',
-      path: ['activeFateCard'],
     });
   }
 });
@@ -158,12 +145,4 @@ export function sanitizeBeforeSave(state) {
   return check.success
     ? { ok: true, data: check.data }
     : { ok: false, data: persisted, errors: check.error.flatten() };
-}
-
-// Dev-only assert
-export function assertState(state) {
-  if (import.meta?.env?.DEV) {
-    const { ok, errors } = sanitizeBeforeSave(state);
-    if (!ok) console.error('[STATE INVALID]', errors);
-  }
 }
