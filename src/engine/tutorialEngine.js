@@ -114,31 +114,17 @@ function _prevStep() {
 function _end() {
   _running = false;
   UI.hideCoach();
-  State.patch({ tutorial: { active: false, step: 0, lastQ: null, awaitRevealToAdvance: false } });
+  State.patch({ tutorial: { active: false, step: 0, awaitRevealToAdvance: false } });
 }
 
 /** Public API */
 export function startTutorial() {
   if (_running) return;
   _running = true;
-  State.patch({ tutorial: { active: true, step: 0, lastQ: null, awaitRevealToAdvance: false } });
+  State.patch({ tutorial: { active: true, step: 0, awaitRevealToAdvance: false } });
   UI.bindCoachHandlers({ onNext: _advanceStep, onSkip: _end });
   _displayStep();
 }
 export function advanceStep()   { _advanceStep(); }
 export function prevStep()      { _prevStep(); }
 export function endTutorial()   { _end(); }
-
-/**
- * Hook: after a REVEAL “Accept” while tutorial is running,
- * auto-advance if the step requested it (used by ask-tutorial-q).
- */
-export function maybeAdvanceAfterReveal() {
-  const s = State.getState();
-  if (s.tutorial?.active && s.tutorial.awaitRevealToAdvance) {
-    const t = { ...(s.tutorial||{}) };
-    t.awaitRevealToAdvance = false;
-    State.patch({ tutorial: t });
-    _advanceStep();
-  }
-}

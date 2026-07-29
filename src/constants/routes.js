@@ -21,20 +21,14 @@ export const ROUTES = {
   },
 
   [SCREENS.RULES]: {
-    labels: ['I’ve Heard Enough','NOUS','Tell Me More'],
-    actions: ['back-to-welcome', null, 'rules-more'],   // middle is a taunt
+    labels: ['I’ve Heard Enough','',''],
+    actions: ['back-to-welcome', null, null],
   },
 
   [SCREENS.OPTIONS]: {
     // Left is now Back so players aren’t trapped in Options
     labels: ['Back','Confirm','Harder →'],
     actions: ['back-to-welcome','options-select','options-next-difficulty'],
-  },
-
-  // ───────────── TUTORIAL LANDING ─────────────
-  [SCREENS.TUTORIAL]: {
-    labels: ['Back','Begin','More'],
-    actions: ['back-to-welcome','tutorial-begin','tutorial-more'],
   },
 
   // ───────────── MAIN LOBBY ─────────────
@@ -92,35 +86,9 @@ export const ROUTES = {
     actions: [null, 'sever-ack', null],                 // only center does anything
   },
 
-  // ───────────── FINAL READING / CREDITS ─────────────
+  // ───────────── FINAL READING ─────────────
   [SCREENS.FINAL_READING]: {
-    labels: [
-      s => s.readingButtons?.[0] ?? 'A',
-      () => 'Play Again',
-      s => s.readingButtons?.[2] ?? 'C',
-    ],
-    actions: ['reading-a','reset-game','reading-c'],
-  },
-
-  [SCREENS.CREDITS]: {
-    labels: ['Main Menu','NOUS','NOUS'],
-    actions: ['back-to-welcome', null, null],
+    labels: ['', 'Play Again', ''],
+    actions: [null, 'reset-game', null],
   },
 };
-
-// Guard: enforce 3 labels/actions & types
-export function guardRoutes(routes) {
-  for (const [screen, cfg] of Object.entries(routes)) {
-    if (!cfg?.labels || cfg.labels.length !== 3) throw new Error(`Route ${screen}: needs 3 labels`);
-    if (!cfg?.actions || cfg.actions.length !== 3) throw new Error(`Route ${screen}: needs 3 actions`);
-    cfg.labels.forEach((l,i) => {
-      const ok = typeof l === 'string' || typeof l === 'function';
-      if (!ok) throw new Error(`Route ${screen}[${i}] label must be string or fn(state)`);
-    });
-    cfg.actions.forEach((a,i) => {
-      if (a !== null && typeof a !== 'string') {
-        throw new Error(`Route ${screen}[${i}] action must be string or null`);
-      }
-    });
-  }
-}

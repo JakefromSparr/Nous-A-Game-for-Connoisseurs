@@ -1,11 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { State } from '../src/state.js';
 import { evaluate } from '../src/engine/questionEngine.js';
 import * as Fate from '../src/engine/fateEngine.js';
 import * as Round from '../src/engine/roundEngine.js';
 import { sanitizeBeforeSave, validateOnLoad } from '../src/validator.js';
 import { composeFinalReading } from '../src/engine/readingEngine.js';
+import { SCREENS } from '../src/constants/screens.js';
+import { ROUTES } from '../src/constants/routes.js';
 
 function answer(kind, label = 'Potential') {
   State.resetGame();
@@ -44,6 +47,17 @@ test('Fate effects remain in state and resolve later', () => {
   assert.equal(result.roundScoreDelta, 4);
 });
 
+test('Fate uses one persisted card slot', () => {
+  const patch = Fate.armFate({
+    id: 'F',
+    choices: [{ id: 'F:0', label: 'Choose', effect: null }],
+  });
+
+  assert.equal(patch.activeFateCard.id, 'F');
+  assert.equal('currentFateCard' in patch, false);
+  assert.equal('pendingFateCard' in patch, false);
+});
+
 test('fractional traits save and load', () => {
   State.resetGame();
   State.patch({ traits: { X: 0.6, Y: -0.3, Z: 0.25 } });
@@ -55,4 +69,18 @@ test('fractional traits save and load', () => {
 test('Final Reading cites actual choices', () => {
   const reading = composeFinalReading({ traits: { X: 4, Y: 1, Z: -1 }, classTally: { TYPICAL: 1, REVELATORY: 2, WRONG: 0 }, choiceEvidence: [{ questionText: 'Which door?', chosenLabel: 'The side door' }] });
   assert.match(reading.paragraphs.join(' '), /Which door.*The side door/);
+});
+
+test('screens, routes, and HTML stay in sync', async () => {
+  const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
+  const htmlScreens = [...html.matchAll(/data-screen="([^"]+)"/g)].map((match) => match[1]);
+  const screenIds = Object.values(SCREENS);
+
+  assert.deepEqual([...htmlScreens].sort(), [...screenIds].sort());
+  assert.deepEqual(Object.keys(ROUTES).sort(), [...screenIds].sort());
+
+  for (const [screen, route] of Object.entries(ROUTES)) {
+    assert.equal(route.labels.length, 3, `${screen} must have three labels`);
+    assert.equal(route.actions.length, 3, `${screen} must have three actions`);
+  }
 });

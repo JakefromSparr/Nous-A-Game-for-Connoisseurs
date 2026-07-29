@@ -130,8 +130,8 @@ const ACTIONS = {
     if (choice === 'Options')  return { next: SCREENS.OPTIONS };
 
     if (choice === 'Tutorial') {
-      // Go to the TUTORIAL screen you defined in ROUTES
-      return { next: SCREENS.TUTORIAL };
+      Tutor.startTutorial?.();
+      return { next: SCREENS.WELCOME };
     }
 
     if (choice === 'Reset Save') {
@@ -148,9 +148,6 @@ const ACTIONS = {
     return { next: SCREENS.WELCOME };
   },
 
-  /* RULES */
-  'rules-more'      : () => ({}),
-
   /* OPTIONS — matches your routes */
   'options-next-difficulty' : () => {
     const s = State.getState();
@@ -160,16 +157,6 @@ const ACTIONS = {
     return {};
   },
   'options-select' : () => ({ next: SCREENS.WELCOME }),
-
-  /* TUTORIAL SCREEN actions — matches your routes */
-  'tutorial-begin' : () => {
-    Tutor.startTutorial?.();            // overlay becomes active, buttons are gated
-    return { next: SCREENS.GAME_LOBBY };// start from lobby context; tutorial owns flow
-  },
-  'tutorial-more'  : () => {
-    Tutor.advanceStep?.();              // optional: step through preface text
-    return {};
-  },
 
   /* WAITING ROOM */
   'participants-down': () => {
@@ -228,8 +215,6 @@ const ACTIONS = {
     const patch = Fate.armFate(card, s);
     return { patch, next: SCREENS.FATE };
   },
-  'enter-fate' : () => ACTIONS['tempt-fate'](),
-
   'to-round-lobby' : () => {
     const patch = Round.startRound(State.getState());
     return { patch, next: SCREENS.ROUND_LOBBY };
@@ -339,10 +324,7 @@ const ACTIONS = {
     return { patch, next: s.lives <= 0 ? SCREENS.FINAL_READING : SCREENS.GAME_LOBBY };
   },
 
-  /* FINAL READING / META */
-  'reading-a'   : () => ({}),
-  'reading-b'   : () => ({}),
-  'reading-c'   : () => ({}),
+  /* FINAL READING */
   'reset-game'  : () => {
     State.resetGame?.();
     State.loadData?.();
@@ -350,7 +332,6 @@ const ACTIONS = {
     UI.showParticipantEntry?.();
     return { next: SCREENS.WAITING_ROOM };
   },
-  'quit-game'   : () => ({ next: SCREENS.CREDITS }),
 };
 
 /* ---------------- central router ---------------- */

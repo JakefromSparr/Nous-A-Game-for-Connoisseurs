@@ -11,7 +11,7 @@ function normalizeFateChoices(options = []) {
 
 export function armFate(card) {
   const options = Array.isArray(card?.choices) ? card.choices : (card?.options || []);
-  return { activeFateCard: card ?? null, fateChoices: normalizeFateChoices(options), pendingFateCard: null };
+  return { activeFateCard: card ?? null, fateChoices: normalizeFateChoices(options) };
 }
 
 function flatten(effect) {

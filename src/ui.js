@@ -352,9 +352,8 @@ export const UI = (() => {
     showParticipantEntry,
     showWaitingRoom,
     adjustParticipantCount,
-    getParticipantCount: () => pCount,
-    confirmParticipants,     // now pure
-    showParticipantFlavor,   // new
+    confirmParticipants,
+    showParticipantFlavor,
 
     /* coach overlay (controlled by tutorialEngine) */
     showCoach,

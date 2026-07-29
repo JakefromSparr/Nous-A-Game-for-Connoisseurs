@@ -1,9 +1,9 @@
 {
-  "name": "nous",
+  "name": "nous-a-game-for-connoisseurs",
   "version": "1.0.0",
+  "private": true,
   "type": "module",
-  "description": "README  # Nous: A Game for Connoisseurs",
-  "main": "service-worker.js",
+  "description": "A haunted, single-mind trivia game for three shared buttons.",
   "scripts": {
     "test": "node --test",
     "dev": "vite",
@@ -12,15 +12,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/JakefromASD/Nous.git"
+    "url": "git+https://github.com/JakefromSparr/Nous-A-Game-for-Connoisseurs.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Sparr Games LLC",
+  "license": "UNLICENSED",
   "bugs": {
-    "url": "https://github.com/JakefromASD/Nous/issues"
+    "url": "https://github.com/JakefromSparr/Nous-A-Game-for-Connoisseurs/issues"
   },
-  "homepage": "https://github.com/JakefromASD/Nous#readme",
+  "homepage": "https://nous-a-game-for-connoisseurs.vercel.app/",
   "devDependencies": {
     "vite": "^7.0.6"
   },

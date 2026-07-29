@@ -26,7 +26,6 @@ export function startRound(state) {
     currentCategory: '',
     roundAnswerTally: { A: 0, B: 0, C: 0 },
 
-    pendingFateCard: null,
     activeFateCard: null,
     fateChoices: [null, null, null],
 
@@ -87,7 +86,6 @@ export function finalizeRound(state, fateResolution = {}) {
     currentCategory: '',
     roundAnswerTally: { A: 0, B: 0, C: 0 },
 
-    pendingFateCard: null,
     activeFateCard: null,
     fateChoices: [null, null, null],
 
