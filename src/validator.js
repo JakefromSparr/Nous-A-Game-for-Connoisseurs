@@ -64,7 +64,7 @@ export const persistedGameStateSchema = z.object({
   grinPhase: z.string().nullable().default(null),
 
   // Difficulty
-  startingDifficulty: z.number().int().min(1).max(3).default(1),  // user preference (1..3)
+  startingDifficulty: z.number().int().min(1).max(3).default(1),
   difficultyLevel: z.number().int().min(1),                       // live unlocked cap (up to 7)
   correctAnswersThisDifficulty: z.number().int().min(0),
 
@@ -74,6 +74,7 @@ export const persistedGameStateSchema = z.object({
   answeredQuestionIds: z.array(z.union([z.number(), z.string()])),
   completedFateCardIds: z.array(z.union([z.number(), z.string()])),
   questionHistory: z.record(z.string(), z.string()).default({}),
+  choiceEvidence: z.array(z.any()).default([]),
 
   activeRoundEffects: z.array(ActiveRoundEffect),
   activePowerUps: z.array(z.string()),
@@ -92,10 +93,22 @@ export const persistedGameStateSchema = z.object({
   roundAnswerTally: Tally,
 
   traits: z.object({
-    X: z.number().int().min(-9).max(9),
-    Y: z.number().int().min(-9).max(9),
-    Z: z.number().int().min(-9).max(9),
+    X: z.number().min(-9).max(9),
+    Y: z.number().min(-9).max(9),
+    Z: z.number().min(-9).max(9),
   }),
+
+  classTally: z.object({
+    TYPICAL: z.number().int().min(0),
+    REVELATORY: z.number().int().min(0),
+    WRONG: z.number().int().min(0),
+  }).default({ TYPICAL: 0, REVELATORY: 0, WRONG: 0 }),
+  traitRead: z.any().nullable().default(null),
+  traitSummary: z.any().nullable().default(null),
+  tierSeen: z.record(z.string(), z.number()).default({}),
+  finalReading: z.any().nullable().default(null),
+  pendingFateResolution: z.any().nullable().optional(),
+  roundSummary: z.any().nullable().optional(),
 
   lastOutcome: z.any().optional(),   // REVEAL payload
 

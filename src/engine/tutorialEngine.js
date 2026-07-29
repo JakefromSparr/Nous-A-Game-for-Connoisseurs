@@ -50,6 +50,22 @@ function _forceTutorialQuestion(which = 0) {
   goTo(SCREENS.QUESTION);
 }
 
+export function drawTutorialQuestion() {
+  const s = State.getState();
+  const question = (s.questionDeck || []).find(q => q.tier === 0 && !s.answeredQuestionIds?.has?.(q.id));
+  if (!question) return { question: null, answers: [], category: '' };
+  return {
+    question,
+    answers: (question.answers || []).slice(0, 3).map((answer, index) => ({
+      key: ['A', 'B', 'C'][index],
+      label: answer.label || 'The words have faded.',
+      answerClass: answer.answerClass || 'WRONG',
+      explanation: answer.explanation || 'Nous offers no explanation.',
+    })),
+    category: question.category || question.title || '',
+  };
+}
+
 /** Core: display current step, optionally run a task (like “ask a card”) */
 function _displayStep() {
   const step = getStep();

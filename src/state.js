@@ -43,6 +43,7 @@ function buildInitialState() {
     /* ---- Difficulty / gating ----
        The question engine chooses from tiers <= difficultyLevel. */
     audacity: 0,
+    startingDifficulty: 1,
     difficultyLevel: 1,
     correctAnswersThisDifficulty: 0,
 
@@ -52,6 +53,7 @@ function buildInitialState() {
     answeredQuestionIds: new Set(),
     completedFateCardIds: new Set(),
     questionHistory: {},
+    choiceEvidence: [],
 
     /* ---- Fate state ---- */
     activeRoundEffects: [],
@@ -72,6 +74,7 @@ function buildInitialState() {
     classTally: { TYPICAL: 0, REVELATORY: 0, WRONG: 0 }, // optional running counts by outcome class
     traitRead: null,                                // { routingNudge: string[], flavor: string, ... } (ephemeral)
     traitSummary: null,                             // last computed summary blob (ephemeral, safe to drop)
+    finalReading: null,
     tierSeen: {},                                   // novelty stats per tier (used by soft-bias)
 
     /* ---- Round summary ---- */
@@ -181,13 +184,14 @@ function initializeGame(participants = 1) {
 
     // Difficulty / gating
     audacity: 0,
-    difficultyLevel: 1,
+    difficultyLevel: Math.max(1, Math.min(3, Number(gameState.startingDifficulty || gameState.difficultyLevel) || 1)),
     correctAnswersThisDifficulty: 0,
 
     // Reset run-specific ID sets/history
     answeredQuestionIds: new Set(),
     completedFateCardIds: new Set(),
     questionHistory: {},
+    choiceEvidence: [],
 
     // Fate state
     activeRoundEffects: [],
@@ -208,6 +212,7 @@ function initializeGame(participants = 1) {
     classTally: { TYPICAL: 0, REVELATORY: 0, WRONG: 0 },
     traitRead: null,
     traitSummary: null,
+    finalReading: null,
     tierSeen: {},
 
     // Round summary

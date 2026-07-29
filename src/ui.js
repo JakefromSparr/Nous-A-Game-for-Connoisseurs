@@ -99,6 +99,11 @@ export const UI = (() => {
     if ('thread' in data) updateText('thread-display', data.thread);
     if ('roundScore' in data) updateText('round-score', data.roundScore);
     if ('roundNumber' in data) updateText('round-number-display', data.roundNumber);
+    if ('startingDifficulty' in data) {
+      updateText('difficulty-display', data.startingDifficulty);
+      const meter = $('difficulty-meter');
+      if (meter) meter.value = data.startingDifficulty;
+    }
     if ('currentCategory' in data) updateText('category-hint', data.currentCategory || '[Faded Ink]');
     if ('activeRoundEffects' in data && Array.isArray(data.activeRoundEffects)) {
       const titles = data.activeRoundEffects.map((e) => e.cardTitle).filter(Boolean);
@@ -164,6 +169,24 @@ export const UI = (() => {
   function showFateResult(text) {
     const el = $('divination-outcome');
     if (el) el.textContent = text ?? '';
+  }
+
+  function showFinalReading(reading) {
+    const body = $('reading-body');
+    if (!body) return;
+    body.replaceChildren();
+    if (!reading) {
+      body.textContent = 'You left too little behind. Nous noticed that, too.';
+      return;
+    }
+    const heading = document.createElement('h3');
+    heading.textContent = reading.title || 'The Reading';
+    body.append(heading);
+    for (const text of reading.paragraphs || []) {
+      const paragraph = document.createElement('p');
+      paragraph.textContent = text;
+      body.append(paragraph);
+    }
   }
 
   /* ───── Participants mini-view ───── */
@@ -319,6 +342,7 @@ export const UI = (() => {
     showResult,
     showFailure,
     showFateResult,
+    showFinalReading,
 
     /* welcome nav */
     moveWelcomeSelection,

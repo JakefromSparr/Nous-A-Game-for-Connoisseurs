@@ -7,3 +7,4 @@
 - Added reset-game action to replay from Final Reading
 - Added a centralized Grin flavor text system and migrated the Waiting Room observed-count line to it.
 - Fixed the Waiting Room observed-presence receipt tokens, state clearing, and vertical spacing.
+- Repaired banking, severed-round finalization, persistent Fate effects, traits, tutorial questions, safe card fallbacks, and the evidence-driven Final Reading.
