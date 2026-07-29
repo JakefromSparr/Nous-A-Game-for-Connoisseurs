@@ -2,7 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { State } from '../src/state.js';
-import { drawQuestion, evaluate } from '../src/engine/questionEngine.js';
+import {
+  drawQuestion,
+  evaluate,
+  prepareCrossroads,
+} from '../src/engine/questionEngine.js';
 import * as Fate from '../src/engine/fateEngine.js';
 import * as Round from '../src/engine/roundEngine.js';
 import { sanitizeBeforeSave, validateOnLoad } from '../src/validator.js';
@@ -132,6 +136,7 @@ test('normal rounds deal six unanswered non-tutorial cards from any tier', () =>
     nextRoundT0: 4,
     activeRoundEffects: [],
     difficultyLevel: 1,
+    roundsWon: 2,
   };
   const round = Round.startRound(state);
 
@@ -152,6 +157,7 @@ test('a round packet recycles only after its unseen cards are exhausted', () => 
     roundQuestionIds: ['001', '002'],
     roundDrawPile: ['001', '002'],
     roundIsRecycling: false,
+    isIntroRound: true,
     questionHistory: {},
   });
 
@@ -175,6 +181,7 @@ test('recycled cards disable prior answers and do not collect traits again', () 
     roundQuestionIds: ['001'],
     roundDrawPile: ['001'],
     roundIsRecycling: false,
+    isIntroRound: true,
     questionHistory: {},
     thread: 10,
   });
@@ -215,4 +222,71 @@ test('tutorial cards are isolated from the normal deck and preserve authored cop
   assert.equal(shape.insert, 'Every story has two sides. Questions are less considerate.');
   assert.equal(classic.title, 'A Classic');
   assert.equal(afterWord.title, 'After Word');
+});
+
+test('Tier 5 cards stay gated until two normal rounds are won', () => {
+  const gatedDeck = questionDeck.filter((question) => question.tier >= 4);
+  const base = {
+    questionDeck: gatedDeck,
+    answeredQuestionIds: new Set(),
+    firstEntryActive: false,
+    activeRoundEffects: [],
+  };
+  const beforeGate = Round.startRound({ ...base, roundsWon: 1 });
+  const afterGate = Round.startRound({ ...base, roundsWon: 2 });
+
+  assert.equal(beforeGate.roundQuestionIds.every((id) => {
+    return gatedDeck.find((question) => question.id === id)?.tier === 4;
+  }), true);
+  assert.equal(afterGate.roundQuestionIds.some((id) => {
+    return gatedDeck.find((question) => question.id === id)?.tier === 5;
+  }), true);
+
+  State.resetGame();
+  const tierOne = questionDeck.find((question) => question.id === 102);
+  const tierFive = questionDeck.find((question) => question.id === 501);
+  State.patch({
+    questionDeck: [tierFive, tierOne],
+    roundQuestionIds: [501, 102],
+    roundDrawPile: [501, 102],
+    roundsWon: 1,
+  });
+  assert.deepEqual(prepareCrossroads(State.getState()).candidates, [102]);
+});
+
+test('normal rounds always reset to four Thread', () => {
+  const round = Round.startRound({
+    questionDeck,
+    answeredQuestionIds: new Set(),
+    firstEntryActive: false,
+    nextRoundT0: 9,
+    activeRoundEffects: [],
+    roundsWon: 0,
+  });
+
+  assert.equal(round.thread, 4);
+  assert.equal(Round.tieOff({ roundScore: 3, notWrongCount: 3 }).nextRoundT0, 4);
+});
+
+test('Crossroads offers two packet cards and spends only the selected path', () => {
+  State.resetGame();
+  const capital = questionDeck.find((question) => question.id === 102);
+  const between = questionDeck.find((question) => question.id === 103);
+  const eyeWitness = questionDeck.find((question) => question.id === 105);
+  State.patch({
+    questionDeck: [capital, eyeWitness, between],
+    roundQuestionIds: [102, 105, 103],
+    roundDrawPile: [102, 105, 103],
+    roundIsRecycling: false,
+    questionHistory: {},
+  });
+
+  const crossroads = prepareCrossroads(State.getState());
+  assert.deepEqual(crossroads.candidates, [102, 103]);
+  assert.deepEqual(crossroads.patch.roundDrawPile, [102, 105, 103]);
+
+  State.patch(crossroads.patch);
+  const selected = drawQuestion(State.getState(), 103);
+  assert.equal(selected.question.id, 103);
+  assert.deepEqual(selected.patch.roundDrawPile, [102, 105]);
 });

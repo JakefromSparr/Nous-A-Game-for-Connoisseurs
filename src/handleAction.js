@@ -17,6 +17,9 @@ function renderScreenBody(target, st) {
   if (target === SCREENS.QUESTION && st.currentQuestion) {
     UI.showQuestion(st.currentQuestion, st.currentAnswers);
   }
+  if (target === SCREENS.CROSSROADS) {
+    UI.showCrossroads?.(st);
+  }
   if (target === SCREENS.FATE && st.activeFateCard) {
     UI.showFateCard(st.activeFateCard);
     UI.showFateChoicesFromState(st);
@@ -79,6 +82,11 @@ function applyResult({ patch, next } = {}) {
     if (target === SCREENS.QUESTION && st.currentAnswers?.[i]?.unavailable) {
       return true;
     }
+    if (target === SCREENS.CROSSROADS && !st.tutorial?.active) {
+      const count = st.crossroadCandidates?.length || 0;
+      if (i === 1) return count === 0;
+      return count < 2;
+    }
     return false;
   });
 
@@ -88,13 +96,13 @@ function applyResult({ patch, next } = {}) {
 }
 
 /* Pull baseline cost then draw a question (tutorial uses tier:0) */
-function doPull() {
+function doPull(requestedId = null) {
   const s = State.getState();
   if (s.thread <= 0) return { next: SCREENS.ROUND_LOBBY };
 
   const afterPull = s.thread - 1;
   const draw = s.tutorial?.active ? Tutor.drawTutorialQuestion : Q.drawQuestion;
-  const { question, answers, category, patch: drawPatch } = draw(s);
+  const { question, answers, category, patch: drawPatch } = draw(s, requestedId);
 
   if (!question) {
     return {
@@ -113,6 +121,16 @@ function doPull() {
     },
     next: SCREENS.QUESTION,
   };
+}
+
+function openCrossroads() {
+  const s = State.getState();
+  if (s.thread <= 0) return { next: SCREENS.ROUND_LOBBY };
+  const prepared = Q.prepareCrossroads(s);
+  if (!prepared.candidates?.length) {
+    return { patch: prepared.patch, next: SCREENS.ROUND_LOBBY };
+  }
+  return { patch: prepared.patch, next: SCREENS.CROSSROADS };
 }
 
 /* After REVEAL: decide where to go */
@@ -272,7 +290,44 @@ const ACTIONS = {
     State.spendThreadToWeave();
     return {};
   },
-  'pull'    : () => doPull(),
+  'pull'    : () => {
+    const s = State.getState();
+    return s.isIntroRound || s.tutorial?.active ? doPull() : openCrossroads();
+  },
+
+  /* CROSSROADS */
+  'crossroad-left' : () => {
+    const s = State.getState();
+    const count = s.crossroadCandidates?.length || 0;
+    if (count < 2) return {};
+    return {
+      patch: {
+        crossroadSelection:
+          ((Number(s.crossroadSelection) || 0) - 1 + count) % count,
+      },
+    };
+  },
+  'crossroad-right' : () => {
+    const s = State.getState();
+    const count = s.crossroadCandidates?.length || 0;
+    if (count < 2) return {};
+    return {
+      patch: {
+        crossroadSelection:
+          ((Number(s.crossroadSelection) || 0) + 1) % count,
+      },
+    };
+  },
+  'crossroad-select' : () => {
+    const s = State.getState();
+    const candidates = s.crossroadCandidates || [];
+    const selected = Math.max(
+      0,
+      Math.min(candidates.length - 1, Number(s.crossroadSelection) || 0)
+    );
+    const questionId = candidates[selected];
+    return questionId === undefined ? {} : doPull(questionId);
+  },
 
   /* QUESTION */
   'choose-0': () => {

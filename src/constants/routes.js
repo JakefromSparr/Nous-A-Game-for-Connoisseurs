@@ -52,6 +52,11 @@ export const ROUTES = {
     actions: ['tie-off','weave','pull'],
   },
 
+  [SCREENS.CROSSROADS]: {
+    labels: ['Left','Select','Right'],
+    actions: ['crossroad-left','crossroad-select','crossroad-right'],
+  },
+
   // ───────────── QUESTION ─────────────
   [SCREENS.QUESTION]: {
     labels: [

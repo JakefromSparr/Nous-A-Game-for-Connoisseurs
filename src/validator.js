@@ -87,6 +87,8 @@ export const persistedGameStateSchema = z.object({
   roundDrawPile: z.array(z.union([z.number(), z.string()])).default([]),
   roundIsRecycling: z.boolean().default(false),
   currentQuestionIsRepeat: z.boolean().default(false),
+  crossroadCandidates: z.array(z.union([z.number(), z.string()])).max(2).default([]),
+  crossroadSelection: z.number().int().min(0).max(1).default(0),
   cardPoolBonus: z.number().int().min(0).max(4).default(0),
 
   activeRoundEffects: z.array(ActiveRoundEffect),

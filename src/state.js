@@ -8,7 +8,6 @@ import { validateOnLoad, sanitizeBeforeSave } from './validator.js';
 export const DEFAULTS = {
   baseT0: 4,           // starting thread for Round 1
   roundsToWin: 3,      // how many rounds to win the game
-  threadCapBase: 5,
   roundCardLimitBase: 6,
   roundCardLimitMax: 10,
 };
@@ -40,7 +39,7 @@ function buildInitialState() {
     roundScore: 0,
     notWrongCount: 0,
     thread: 0,
-    nextRoundT0: DEFAULTS.baseT0,   // seed for next round’s starting thread
+    nextRoundT0: DEFAULTS.baseT0,   // persisted for older saves; normal rounds reset to baseT0
     weavePrimed: false,             // spend thread to double next Q points
     pendingBank: 0,                 // reserved for future use (bank animations, etc.)
     isIntroRound: false,
@@ -50,6 +49,8 @@ function buildInitialState() {
     roundDrawPile: [],
     roundIsRecycling: false,
     currentQuestionIsRepeat: false,
+    crossroadCandidates: [],
+    crossroadSelection: 0,
 
     /* ---- Difficulty / draw weighting ----
        Every normal tier remains possible; this shifts the odds. */
@@ -202,6 +203,8 @@ function initializeGame(participants = 1) {
     roundDrawPile: [],
     roundIsRecycling: false,
     currentQuestionIsRepeat: false,
+    crossroadCandidates: [],
+    crossroadSelection: 0,
 
     // Difficulty / gating
     audacity: 0,

@@ -6,6 +6,7 @@ export const SCREENS = Object.freeze({
   OPTIONS        : 'OPTIONS',
   GAME_LOBBY     : 'GAME_LOBBY',
   ROUND_LOBBY    : 'ROUND_LOBBY',
+  CROSSROADS     : 'CROSSROADS',
   QUESTION       : 'QUESTION',
   REVEAL         : 'REVEAL',
   FATE           : 'FATE',
