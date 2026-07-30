@@ -9,12 +9,14 @@
     <title>NOUS — A Game for Connoisseurs</title>
     <link rel="stylesheet" href="/style.css" />
     <link
-      href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=EB+Garamond:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Cormorant+SC:wght@500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,500&display=swap"
       rel="stylesheet"
     />
   </head>
 
   <body>
+    <div class="table-vignette" aria-hidden="true"></div>
+
     <!-- ARIA live region for screen announcements -->
     <div id="aria-status" class="visually-hidden" aria-live="polite"></div>
 
@@ -105,9 +107,15 @@
         <p id="parlor-message" class="parlor-message" hidden></p>
 
         <div id="hud">
-          <p><strong>Lives:</strong> <span id="lives-display">0</span></p>
-          <p><strong>Rounds to Win:</strong> <span id="rounds-display">3</span></p>
-          <p><strong>Score:</strong> <span id="score-display">0</span></p>
+          <p class="hud-counter" data-note="how long you’ll last" tabindex="0">
+            <strong>Lives:</strong> <span id="lives-display">0</span>
+          </p>
+          <p class="hud-counter" data-note="how far you’ll go" tabindex="0">
+            <strong>Rounds to Win:</strong> <span id="rounds-display">3</span>
+          </p>
+          <p class="hud-counter" data-note="how far you’ve come" tabindex="0">
+            <strong>Score:</strong> <span id="score-display">0</span>
+          </p>
           <p id="divinations-row">
             <strong>Active Divinations:</strong>
             <span id="divinations-text">[None]</span>
@@ -139,37 +147,55 @@
         <p class="subtitle crossroads-instruction">Choose which way the Thread is pulled.</p>
 
         <div id="crossroads" class="crossroads" aria-label="Two possible paths">
-          <div id="crossroad-left" class="crossroad-path" data-path-index="0">
-            <span class="crossroad-arrow" aria-hidden="true">←</span>
-            <span class="crossroad-hall" aria-hidden="true"></span>
-            <strong class="crossroad-category">Faded Ink</strong>
-            <span class="crossroad-familiar" hidden>Looks Familiar</span>
-          </div>
+          <div class="crossroad-drum">
+            <div class="rolodex-deck" aria-hidden="true">
+              <span class="rolodex-leaf" style="--leaf: 0"></span>
+              <span class="rolodex-leaf" style="--leaf: 1"></span>
+              <span class="rolodex-leaf" style="--leaf: 2"></span>
+              <span class="rolodex-leaf" style="--leaf: 3"></span>
+              <span class="rolodex-leaf" style="--leaf: 4"></span>
+              <span class="rolodex-leaf" style="--leaf: 5"></span>
+              <span class="rolodex-leaf" style="--leaf: 6"></span>
+              <span class="rolodex-leaf" style="--leaf: 7"></span>
+            </div>
 
-          <div class="crossroad-marker" aria-hidden="true">◇</div>
+            <div id="crossroad-left" class="crossroad-path" data-path-index="0">
+              <span class="crossroad-arrow" aria-hidden="true">←</span>
+              <span class="crossroad-hall" aria-hidden="true"></span>
+              <strong class="crossroad-category">Faded Ink</strong>
+              <span class="crossroad-familiar" hidden>Looks Familiar</span>
+            </div>
 
-          <div id="crossroad-right" class="crossroad-path" data-path-index="1">
-            <span class="crossroad-arrow" aria-hidden="true">→</span>
-            <span class="crossroad-hall" aria-hidden="true"></span>
-            <strong class="crossroad-category">Faded Ink</strong>
-            <span class="crossroad-familiar" hidden>Looks Familiar</span>
+            <div class="crossroad-marker" aria-hidden="true">◇</div>
+
+            <div id="crossroad-right" class="crossroad-path" data-path-index="1">
+              <span class="crossroad-arrow" aria-hidden="true">→</span>
+              <span class="crossroad-hall" aria-hidden="true"></span>
+              <strong class="crossroad-category">Faded Ink</strong>
+              <span class="crossroad-familiar" hidden>Looks Familiar</span>
+            </div>
           </div>
         </div>
       </section>
 
       <section class="game-screen" data-screen="QUESTION" aria-hidden="true">
+        <div class="artifact-meta">
+          <span id="question-category">Mind</span>
+          <span id="question-card-id">Card 000</span>
+        </div>
         <h2 id="question-title" class="gold-text">Question</h2>
         <p id="question-text">…</p>
 
         <ul class="answer-list" aria-label="Answers">
-          <li><strong>A</strong> — <span id="answer-a"></span></li>
-          <li><strong>B</strong> — <span id="answer-b"></span></li>
-          <li><strong>C</strong> — <span id="answer-c"></span></li>
+          <li><strong>A</strong><span id="answer-a"></span></li>
+          <li><strong>B</strong><span id="answer-b"></span></li>
+          <li><strong>C</strong><span id="answer-c"></span></li>
         </ul>
       </section>
 
       <!-- ───────────────── REVEAL ───────────────── -->
       <section class="game-screen" data-screen="REVEAL" aria-hidden="true">
+        <p class="artifact-kicker">Answer Record</p>
         <h2 id="result-header" class="gold-text">Result</h2>
         <p id="result-question" class="subtitle"></p>
         <p><strong>Your answer:</strong> <span id="result-chosen-answer"></span></p>
@@ -225,9 +251,15 @@
 
     <!-- Three-button controller -->
     <nav id="controller" data-controller-state="WELCOME" aria-label="Controller">
-      <button id="btn0" class="ctrl"><span class="button-label">A</span></button>
-      <button id="btn1" class="ctrl"><span class="button-label">B</span></button>
-      <button id="btn2" class="ctrl"><span class="button-label">C</span></button>
+      <button id="btn0" class="ctrl" data-key="A">
+        <span class="button-label"><span class="button-answer">A</span></span>
+      </button>
+      <button id="btn1" class="ctrl" data-key="B">
+        <span class="button-label"><span class="button-answer">B</span></span>
+      </button>
+      <button id="btn2" class="ctrl" data-key="C">
+        <span class="button-label"><span class="button-answer">C</span></span>
+      </button>
     </nav>
 
     <!-- App entry -->
