@@ -300,6 +300,7 @@ const ACTIONS = {
     const s = State.getState();
     const count = s.crossroadCandidates?.length || 0;
     if (count < 2) return {};
+    UI.queueCrossroadMotion?.('left');
     return {
       patch: {
         crossroadSelection:
@@ -311,6 +312,7 @@ const ACTIONS = {
     const s = State.getState();
     const count = s.crossroadCandidates?.length || 0;
     if (count < 2) return {};
+    UI.queueCrossroadMotion?.('right');
     return {
       patch: {
         crossroadSelection:

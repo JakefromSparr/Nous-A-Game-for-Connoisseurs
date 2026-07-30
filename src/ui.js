@@ -16,6 +16,16 @@ export const UI = (() => {
   ];
   const screens = Array.from(document.querySelectorAll('.game-screen'));
 
+  buttons.forEach((btn) => {
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+      btn.classList.remove('is-kachunking');
+      void btn.offsetWidth;
+      btn.classList.add('is-kachunking');
+      window.setTimeout(() => btn.classList.remove('is-kachunking'), 680);
+    });
+  });
+
   /* ───── Welcome list navigation ───── */
   const welcomeLis = Array.from(document.querySelectorAll('#welcome-options li'));
   let welcomeIdx = 0;
@@ -70,9 +80,26 @@ export const UI = (() => {
       const btn = buttons[i];
       if (!btn) continue;
 
-      const span = btn.querySelector('.button-label') || btn;
+      const span = btn.querySelector('.button-answer') || btn.querySelector('.button-label') || btn;
       const txt = labels[i] ?? '';
+      const previousText = span.textContent;
       span.textContent = txt || ' ';
+
+      if (previousText !== span.textContent) {
+        const inkWindow = btn.querySelector('.button-label');
+        if (inkWindow) {
+          inkWindow.classList.remove('is-surfacing');
+          void inkWindow.offsetWidth;
+          inkWindow.classList.add('is-surfacing');
+          const surfaceVersion = String((Number(inkWindow.dataset.surfaceVersion) || 0) + 1);
+          inkWindow.dataset.surfaceVersion = surfaceVersion;
+          window.setTimeout(() => {
+            if (inkWindow.dataset.surfaceVersion === surfaceVersion) {
+              inkWindow.classList.remove('is-surfacing');
+            }
+          }, 1040);
+        }
+      }
 
       // A button is disabled if the isDisabled function says so, OR if it has no label.
       const disabled = typeof isDisabled === 'function' ? !!isDisabled(i) : !txt;
@@ -138,6 +165,10 @@ export const UI = (() => {
 
     const t1 = $('question-title'); if (t1) t1.textContent = title;
     const t2 = $('question-text');  if (t2) t2.textContent = text;
+    const category = $('question-category');
+    if (category) category.textContent = q?.category || 'Unmarked';
+    const cardId = $('question-card-id');
+    if (cardId) cardId.textContent = `Card ${String(q?.id ?? '—').padStart(3, '0')}`;
     const aA = $('answer-a');       if (aA) aA.textContent = arr[0]?.label ?? '';
     const aB = $('answer-b');       if (aB) aB.textContent = arr[1]?.label ?? '';
     const aC = $('answer-c');       if (aC) aC.textContent = arr[2]?.label ?? '';
@@ -170,6 +201,8 @@ export const UI = (() => {
     if (r.pointsGained > 0) outcomeMessage += ` Score +${r.pointsGained}.`;
 
     const h  = $('result-header');          if (h)  h.textContent  = headerText;
+    const reveal = h?.closest('[data-screen="REVEAL"]');
+    if (reveal) reveal.dataset.outcome = String(r?.kind || 'WRONG').toUpperCase();
     const q1 = $('result-question');        if (q1) q1.textContent = r?.questionText ?? '';
     const a  = $('result-chosen-answer');   if (a)  a.textContent  = r?.chosenLabel  ?? '';
     const ex = $('result-explanation');     if (ex) ex.textContent = r?.explanation  ?? '';
@@ -181,6 +214,13 @@ export const UI = (() => {
     const om = $('result-outcome-message'); if (om) om.textContent = outcomeMessage;
   }
 
+  let pendingCrossroadMotion = '';
+  let crossroadMotionTimer = null;
+
+  function queueCrossroadMotion(direction) {
+    pendingCrossroadMotion = direction === 'left' ? 'left' : 'right';
+  }
+
   function showCrossroads(state = {}) {
     const candidates = Array.isArray(state.crossroadCandidates)
       ? state.crossroadCandidates
@@ -189,6 +229,20 @@ export const UI = (() => {
       0,
       Math.min(candidates.length - 1, Number(state.crossroadSelection) || 0)
     );
+    const mechanism = $('crossroads');
+
+    if (mechanism && pendingCrossroadMotion) {
+      const motionClass = `is-ticking-${pendingCrossroadMotion}`;
+      mechanism.classList.remove('is-ticking-left', 'is-ticking-right');
+      void mechanism.offsetWidth;
+      mechanism.classList.add(motionClass);
+      pendingCrossroadMotion = '';
+
+      if (crossroadMotionTimer) window.clearTimeout(crossroadMotionTimer);
+      crossroadMotionTimer = window.setTimeout(() => {
+        mechanism.classList.remove('is-ticking-left', 'is-ticking-right');
+      }, 1080);
+    }
 
     ['crossroad-left', 'crossroad-right'].forEach((id, index) => {
       const path = $(id);
@@ -204,6 +258,7 @@ export const UI = (() => {
       path.hidden = !available;
       path.classList.toggle('is-selected', available && index === selected);
       path.setAttribute('aria-current', available && index === selected ? 'true' : 'false');
+      path.setAttribute('aria-hidden', String(!available || index !== selected));
       if (category) category.textContent = question?.category || 'Faded Ink';
       if (familiar) familiar.hidden = !available || !state.roundIsRecycling;
     });
@@ -242,7 +297,9 @@ export const UI = (() => {
   const flavor    = $('participant-flavor');
   let   pCount    = 1;
 
-  const updatePDisp = () => { if (countDisp) countDisp.textContent = pCount; };
+  const updatePDisp = (value = pCount) => {
+    if (countDisp) countDisp.textContent = value;
+  };
 
   // When the number changes, update the display and clear any spooky line
   const adjustParticipantCount = (d) => {
@@ -272,7 +329,7 @@ export const UI = (() => {
         pCount = Math.max(1, Math.min(20, gathered));
       }
 
-      updatePDisp();
+      updatePDisp(pCount + 1);
       showParticipantFlavor(state.waitingRoomReceiptText);
       return;
     }
@@ -405,6 +462,7 @@ export const UI = (() => {
     /* rendering helpers */
     showQuestion,
     showCrossroads,
+    queueCrossroadMotion,
     showFateCard,
     showFateChoicesFromState,
     showResult,
