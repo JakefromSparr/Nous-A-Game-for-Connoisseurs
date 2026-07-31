@@ -62,19 +62,19 @@ export const ROUTES = {
 [SCREENS.QUESTION]: {
   labels: [
     s =>
-      s.currentAnswers?.[0]?.buttonLabel ??
-      s.currentAnswers?.[0]?.label ??
+      s.currentAnswers?.[0]?.buttonLabel ||
+      s.currentAnswers?.[0]?.label ||
       'A',
     s =>
-      s.currentAnswers?.[1]?.buttonLabel ??
-      s.currentAnswers?.[1]?.label ??
+      s.currentAnswers?.[1]?.buttonLabel ||
+      s.currentAnswers?.[1]?.label ||
       'B',
     s =>
-      s.currentAnswers?.[2]?.buttonLabel ??
-      s.currentAnswers?.[2]?.label ??
+      s.currentAnswers?.[2]?.buttonLabel ||
+      s.currentAnswers?.[2]?.label ||
       'C',
   ],
-  actions: ['choose-0','choose-1','choose-2'],
+  actions: ['choose-0', 'choose-1', 'choose-2'],
 },
 
   // ───────────── REVEAL ─────────────
