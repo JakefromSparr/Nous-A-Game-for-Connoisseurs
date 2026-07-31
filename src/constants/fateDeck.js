@@ -30,14 +30,16 @@ const fateDeck = [
           flavorText: "You let the moth spiral towards the flame. You feel a strange connection to its fate, tied to your future choices."
         }
       },
-      { 
+            {
         id: "DYN001:2",
         label: "Ignore",
-          effect: {
+        effect: {
           type: "APPLY_WAGER",
           target: "answer-c",
           reward: { type: "SCORE", value: -1 },
-          flavorText: "You let the moth spiral towards the flame. You try not to watch as it is ravaged by flame, but you feel an odd kinship."
+          flavorText:
+            "You let the moth spiral towards the flame. You try not to watch as it is ravaged by flame, but you feel an odd kinship."
+        }
       }
     ]
   },
