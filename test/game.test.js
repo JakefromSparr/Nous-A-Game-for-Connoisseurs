@@ -48,8 +48,16 @@ test('severed rounds lose their bank and still finalize', () => {
 
 test('Fate effects remain in state and resolve later', () => {
   const state = { roundScore: 0, activeRoundEffects: [], activePowerUps: [], completedFateCardIds: new Set(), activeFateCard: { id: 'F', title: 'A wager' } };
-  const patch = Fate.applyChoice({ effect: { type: 'APPLY_WAGER', target: 'C', reward: { type: 'SCORE', value: 2 } } }, state);
+  const patch = Fate.applyChoice({ id: 'F:0', label: 'Wait', effect: { type: 'APPLY_WAGER', target: 'C', reward: { type: 'SCORE', value: 2 } } }, state);
   assert.equal(patch.activeRoundEffects.length, 1);
+  assert.deepEqual(patch.fateEvidence[0], {
+    cardId: 'F',
+    cardTitle: 'A wager',
+    choiceId: 'F:0',
+    chosenLabel: 'Wait',
+    effectTypes: ['APPLY_WAGER'],
+    roundNumber: 1,
+  });
   const result = Fate.resolveRound({ A: 0, B: 0, C: 2 }, true, { ...state, ...patch, pendingBank: 3 });
   assert.equal(result.roundScoreDelta, 4);
 });
@@ -71,11 +79,67 @@ test('fractional traits save and load', () => {
   const saved = sanitizeBeforeSave(State.getState());
   assert.equal(saved.ok, true);
   assert.equal(validateOnLoad(saved.data).ok, true);
+
+  const olderSave = { ...saved.data };
+  delete olderSave.fateEvidence;
+  const loadedOlderSave = validateOnLoad(olderSave);
+  assert.equal(loadedOlderSave.ok, true);
+  assert.deepEqual(loadedOlderSave.data.fateEvidence, []);
 });
 
 test('Final Reading cites actual choices', () => {
-  const reading = composeFinalReading({ traits: { X: 4, Y: 1, Z: -1 }, classTally: { TYPICAL: 1, REVELATORY: 2, WRONG: 0 }, choiceEvidence: [{ questionText: 'Which door?', chosenLabel: 'The side door' }] });
+  const reading = composeFinalReading({ traits: { X: 4, Y: 1, Z: -1 }, classTally: { TYPICAL: 1, REVELATORY: 2, WRONG: 0 }, choiceEvidence: [{ questionText: 'Which door?', chosenLabel: 'The side door', kind: 'REVELATORY' }] });
   assert.match(reading.paragraphs.join(' '), /Which door.*The side door/);
+});
+
+test('Final Reading changes its portrait for distinct trait patterns', () => {
+  const evidence = [
+    { questionId: 101, questionText: 'Which way?', chosenLabel: 'The measured path', kind: 'TYPICAL', category: 'Mind', tier: 1 },
+    { questionId: 202, questionText: 'What remains?', chosenLabel: 'The implication', kind: 'REVELATORY', category: 'Soul', tier: 2 },
+    { questionId: 303, questionText: 'What moved?', chosenLabel: 'The shadow', kind: 'WRONG', category: 'Body', tier: 3 },
+    { questionId: 401, questionText: 'What can be proven?', chosenLabel: 'The record', kind: 'TYPICAL', category: 'Mind', tier: 4 },
+  ];
+  const analytical = composeFinalReading({
+    traits: { X: -6, Y: -1, Z: 3 },
+    classTally: { TYPICAL: 3, REVELATORY: 1, WRONG: 0 },
+    choiceEvidence: evidence,
+  });
+  const figurative = composeFinalReading({
+    traits: { X: 1, Y: 2, Z: -6 },
+    classTally: { TYPICAL: 1, REVELATORY: 3, WRONG: 0 },
+    choiceEvidence: evidence,
+  });
+
+  assert.equal(analytical.title, 'The Measured Doubt');
+  assert.equal(analytical.meta.primary, 'X-');
+  assert.equal(figurative.title, 'The Question Beneath');
+  assert.equal(figurative.meta.primary, 'Z-');
+  assert.notDeepEqual(analytical.paragraphs, figurative.paragraphs);
+});
+
+test('Final Reading interprets Fate choices and remains deterministic', () => {
+  const state = {
+    traits: { X: 3.5, Y: 4.5, Z: -2 },
+    classTally: { TYPICAL: 2, REVELATORY: 4, WRONG: 1 },
+    choiceEvidence: [
+      { questionId: 110, questionText: 'What happens when you cross a line?', chosenLabel: 'You get in trouble.', kind: 'REVELATORY', category: 'Soul', tier: 1 },
+      { questionId: 405, questionText: 'Which phrase was borrowed?', chosenLabel: 'A sight for sore eyes', kind: 'TYPICAL', category: 'Mind', tier: 4 },
+    ],
+    fateEvidence: [{
+      cardId: 'DYN002',
+      cardTitle: 'Predictive Loop',
+      chosenLabel: "Predict 'B'",
+      effectTypes: ['ROUND_PREDICTION'],
+    }],
+  };
+  const first = composeFinalReading(state);
+  const second = composeFinalReading(state);
+  const text = first.paragraphs.join(' ');
+
+  assert.deepEqual(first, second);
+  assert.equal(first.meta.fatePattern, 'LEVERAGE');
+  assert.match(text, /Predictive Loop.*Predict 'B'/);
+  assert.match(text, /consensus|agreement/i);
 });
 
 test('screens, routes, and HTML stay in sync', async () => {

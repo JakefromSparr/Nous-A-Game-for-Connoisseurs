@@ -226,6 +226,9 @@ export function evaluate(choiceIndex, _state) {
         questionText: q.text || q.title || 'A question without a name.',
         chosenLabel: a.label || 'the unspoken answer',
         kind,
+        category: q.category || '',
+        tier: Number(q.tier) || 0,
+        roundNumber: Number(S.roundNumber) || 1,
       }].slice(-12);
 
   const weightIsActive = (S.activeRoundEffects || []).some(e => e.type === 'ROUND_MODIFIER' && e.modifier === 'WEIGHT');

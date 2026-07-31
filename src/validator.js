@@ -81,6 +81,7 @@ export const persistedGameStateSchema = z.object({
     z.union([z.string(), z.array(z.string())])
   ).default({}),
   choiceEvidence: z.array(z.any()).default([]),
+  fateEvidence: z.array(z.any()).default([]),
   isIntroRound: z.boolean().default(false),
   roundCardLimit: z.number().int().min(0).max(10).default(6),
   roundQuestionIds: z.array(z.union([z.number(), z.string()])).default([]),
