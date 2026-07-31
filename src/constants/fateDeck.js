@@ -9,14 +9,14 @@ const fateDeck = [
   {
     id: "DYN001",
     title: "The Candle and the Pyre",
-    text: "A moth whispers to you as it flutters by. 'Isn't the fire beautiful?' You have two choices:\n- Catch the moth and gain two points now.\n- Let it go, and for this round, every 'C' answer will earn you an extra point.",
+    text: "A moth whispers to you as it flutters by. 'Isn't the fire beautiful?' You have two choices:\n- Catch the moth and gain five points now.\n- Let it go, and for this round, every 'C' answer will earn you an extra point.",
     choices: [
       {
         id: "DYN001:0",
         label: "Now",
         effect: {
           type: "IMMEDIATE_SCORE",
-          value: 2,
+          value: 5,
           flavorText: "You snatch the moth from the air. Its dust glitters on your fingers as you feel a surge of insight."
         }
       },
@@ -32,7 +32,12 @@ const fateDeck = [
       },
       { 
         id: "DYN001:2",
-        label: "Ignore" 
+        label: "Ignore",
+          effect: {
+          type: "APPLY_WAGER",
+          target: "answer-c",
+          reward: { type: "SCORE", value: -1 },
+          flavorText: "You let the moth spiral towards the flame. You try not to watch as it is ravaged by flame, but you feel an odd kinship."
       }
     ]
   },
