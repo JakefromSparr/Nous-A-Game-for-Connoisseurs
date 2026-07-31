@@ -60,8 +60,8 @@ function prepareRoundQuestions(state, isIntroRound) {
   const available = deck.filter((question) => {
     const tier = Number(question.tier);
     const tierIsAvailable =
-      (tier >= 1 && tier <= 4) ||
-      (tier === 5 && (state.roundsWon || 0) >= 2);
+  (tier >= 1 && tier <= 3) ||
+  ((tier === 4 || tier === 5) && (state.roundNumber || 1) >= 3);
     return (
       tierIsAvailable &&
       Array.isArray(question.answers) &&
