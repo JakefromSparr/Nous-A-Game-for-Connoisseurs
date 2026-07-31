@@ -1,12 +1,15 @@
 // src/state.js
 import { SCREENS } from './constants/screens.js';
+import { WAITING_ROOM_PHASES } from './constants/waitingRoom.js';
 import { validateOnLoad, sanitizeBeforeSave } from './validator.js';
 
 /* ===========================
    Defaults & small helpers
    =========================== */
 export const DEFAULTS = {
-  baseT0: 4,           // starting thread for Round 1
+  baseT0: 5,           // standard starting Thread
+  tasselCarryCap: 3,
+  startingChances: 3,
   roundsToWin: 3,      // how many rounds to win the game
   roundCardLimitBase: 6,
   roundCardLimitMax: 10,
@@ -31,6 +34,7 @@ function buildInitialState() {
     observedCount: 0,
     waitingRoomReceiptText: '',
     waitingRoomReceiptVisible: false,
+    waitingRoomPhase: WAITING_ROOM_PHASES.ENTRY,
     grinPhase: null,
     firstEntryActive: false,
     tasselTaken: false,
@@ -39,7 +43,7 @@ function buildInitialState() {
     roundScore: 0,
     notWrongCount: 0,
     thread: 0,
-    nextRoundT0: DEFAULTS.baseT0,   // tassel may carry up to 2 unused Thread into the next round
+    nextRoundT0: DEFAULTS.baseT0,   // tassel may carry unused Thread into the next round
     weavePrimed: false,             // spend thread to double next Q points
     pendingBank: 0,                 // reserved for future use (bank animations, etc.)
     isIntroRound: false,
@@ -177,7 +181,7 @@ function initializeGame(participants = 1) {
     currentScreen: SCREENS.GAME_LOBBY,
 
     // Meta / progression
-    lives: Math.max(1, Number(participants) || 1) + 1, // little buffer for the group
+    lives: DEFAULTS.startingChances, // persisted field name retained for older saves
     score: 0,
     roundsToWin: DEFAULTS.roundsToWin,
     roundsWon: 0,
@@ -186,6 +190,7 @@ function initializeGame(participants = 1) {
     observedCount: Math.max(1, Number(participants) || 1) + 1,
     waitingRoomReceiptText: '',
     waitingRoomReceiptVisible: false,
+    waitingRoomPhase: WAITING_ROOM_PHASES.ENTRY,
     grinPhase: null,
     firstEntryActive: true,
     tasselTaken: false,
@@ -256,6 +261,7 @@ function clearWaitingRoomReceipt() {
   patch({
     waitingRoomReceiptText: '',
     waitingRoomReceiptVisible: false,
+    waitingRoomPhase: WAITING_ROOM_PHASES.ENTRY,
   });
 }
 

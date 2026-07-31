@@ -1,5 +1,10 @@
 // src/ui.js
 // Pure presentation layer – no game logic, no routing.
+import {
+  WAITING_ROOM_PHASES,
+  getWaitingRoomPhase,
+  isWaitingRoomResolved,
+} from './constants/waitingRoom.js';
 
 export const UI = (() => {
   /* ───── DOM refs ───── */
@@ -294,11 +299,121 @@ export const UI = (() => {
 
   /* ───── Participants mini-view ───── */
   const countDisp = $('participant-count-display');
+  const countValue = $('participant-count-value');
+  const countRed = $('participant-count-red');
   const flavor    = $('participant-flavor');
+  const participantPanel = $('participant-panel');
   let   pCount    = 1;
+  let waitingRoomPhase = null;
+  let waitingRoomNousReady = false;
+  let waitingRoomTimers = [];
 
   const updatePDisp = (value = pCount) => {
-    if (countDisp) countDisp.textContent = value;
+    if (countValue) {
+      countValue.textContent = value;
+    } else if (countDisp) {
+      countDisp.textContent = value;
+    }
+  };
+
+  const clearWaitingRoomTimers = () => {
+    waitingRoomTimers.forEach((timer) => window.clearTimeout(timer));
+    waitingRoomTimers = [];
+  };
+
+  const setWaitingButtonDisabled = (button, disabled) => {
+    if (!button) return;
+    button.disabled = disabled;
+    button.setAttribute('aria-disabled', String(disabled));
+    button.classList.toggle('disabled', disabled);
+  };
+
+  const resetWaitingRoomApparatus = () => {
+    clearWaitingRoomTimers();
+    waitingRoomNousReady = false;
+    participantPanel?.classList.remove('is-count-correcting', 'is-count-overwritten');
+    if (countRed) {
+      countRed.textContent = '';
+      countRed.hidden = true;
+    }
+    buttons.forEach((button) => {
+      button?.classList.remove(
+        'is-waiting-latched',
+        'is-waiting-rebounding'
+      );
+      button?.querySelector('.button-label')?.classList.remove('is-waiting-word-shaking');
+    });
+  };
+
+  const beginWaitingRoomResolution = (state, phase) => {
+    const gathered = Math.max(1, Number(state.gatheredCount) || pCount);
+    const observed = Math.max(gathered + 1, Number(state.observedCount) || gathered + 1);
+    const lockedButton = phase === WAITING_ROOM_PHASES.RESOLVED_NO_USE
+      ? buttons[0]
+      : buttons[2];
+    const middleButton = buttons[1];
+
+    updatePDisp(gathered);
+    if (countRed) {
+      countRed.textContent = observed;
+      countRed.hidden = false;
+    }
+
+    participantPanel?.classList.add('is-count-correcting');
+    middleButton?.classList.add('is-waiting-latched');
+    lockedButton?.classList.add('is-waiting-latched');
+    setWaitingButtonDisabled(middleButton, true);
+
+    waitingRoomTimers.push(window.setTimeout(() => {
+      participantPanel?.classList.add('is-count-overwritten');
+      if (ariaStatus) {
+        ariaStatus.textContent = `Participants: ${gathered}. Corrected in red: ${observed}.`;
+      }
+    }, 470));
+
+    waitingRoomTimers.push(window.setTimeout(() => {
+      middleButton?.classList.remove('is-waiting-latched');
+      middleButton?.classList.add('is-waiting-rebounding');
+    }, 980));
+
+    waitingRoomTimers.push(window.setTimeout(() => {
+      middleButton?.classList.remove('is-waiting-rebounding');
+      waitingRoomNousReady = true;
+      setWaitingButtonDisabled(middleButton, false);
+    }, 1580));
+  };
+
+  const syncWaitingRoomApparatus = (state, phase) => {
+    const phaseChanged = waitingRoomPhase !== phase;
+    if (phaseChanged) {
+      resetWaitingRoomApparatus();
+      waitingRoomPhase = phase;
+    }
+
+    if (phase === WAITING_ROOM_PHASES.ENTRY) return;
+
+    if (phase === WAITING_ROOM_PHASES.OBSERVED) {
+      buttons[1]?.classList.add('is-waiting-latched');
+      return;
+    }
+
+    if (phase === WAITING_ROOM_PHASES.ACCEPT_REJECTED) {
+      buttons[1]?.classList.add('is-waiting-latched');
+      if (phaseChanged) {
+        const answerWindow = buttons[2]?.querySelector('.button-label');
+        answerWindow?.classList.remove('is-waiting-word-shaking');
+        void answerWindow?.offsetWidth;
+        answerWindow?.classList.add('is-waiting-word-shaking');
+        waitingRoomTimers.push(window.setTimeout(() => {
+          answerWindow?.classList.remove('is-waiting-word-shaking');
+        }, 720));
+      }
+      return;
+    }
+
+    if (isWaitingRoomResolved(phase) && phaseChanged) {
+      beginWaitingRoomResolution(state, phase);
+    }
   };
 
   // When the number changes, update the display and clear any spooky line
@@ -322,30 +437,42 @@ export const UI = (() => {
   };
 
   const showWaitingRoom = (state = {}) => {
-    if (state.waitingRoomReceiptVisible) {
+    const phase = getWaitingRoomPhase(state);
+
+    if (phase !== WAITING_ROOM_PHASES.ENTRY) {
       const gathered = Number(state.gatheredCount);
 
       if (Number.isFinite(gathered) && gathered > 0) {
         pCount = Math.max(1, Math.min(20, gathered));
       }
 
-      updatePDisp(pCount + 1);
+      if (!isWaitingRoomResolved(phase)) {
+        updatePDisp(pCount + 1);
+      }
       showParticipantFlavor(state.waitingRoomReceiptText);
+      syncWaitingRoomApparatus(state, phase);
       return;
     }
 
     updatePDisp();
     showParticipantFlavor('');
+    syncWaitingRoomApparatus(state, phase);
   };
 
   const showParticipantEntry = () => {
     pCount = 1;
+    waitingRoomPhase = null;
+    resetWaitingRoomApparatus();
     updatePDisp();
     if (flavor) { flavor.textContent = ''; flavor.hidden = true; }
     updateScreen('WAITING_ROOM');
   };
 
   const showGameLobby = (state = {}) => {
+    if (waitingRoomPhase !== null) {
+      resetWaitingRoomApparatus();
+      waitingRoomPhase = null;
+    }
     const message = $('parlor-message');
     const divinationsRow = $('divinations-row');
     if (!message) return;
@@ -478,6 +605,7 @@ export const UI = (() => {
     showParticipantEntry,
     showWaitingRoom,
     showGameLobby,
+    isWaitingRoomNousReady: () => waitingRoomNousReady,
     adjustParticipantCount,
     confirmParticipants,
     showParticipantFlavor,

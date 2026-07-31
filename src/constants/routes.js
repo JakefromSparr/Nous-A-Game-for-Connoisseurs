@@ -1,5 +1,6 @@
 // src/constants/routes.js
 import { SCREENS } from './screens.js';
+import { getWaitingRoomLabels } from './waitingRoom.js';
 
 // Exactly 3 labels and 3 actions per screen.
 // labels[i]: string | (state)=>string
@@ -13,9 +14,9 @@ export const ROUTES = {
 
   [SCREENS.WAITING_ROOM]: {
     labels: [
-      s => (s.waitingRoomReceiptVisible ? 'Turn Back' : 'Less'),
-      s => (s.waitingRoomReceiptVisible ? 'Enter' : 'Confirm'),
-      s => (s.waitingRoomReceiptVisible ? '' : 'More'),
+      s => getWaitingRoomLabels(s)[0],
+      s => getWaitingRoomLabels(s)[1],
+      s => getWaitingRoomLabels(s)[2],
     ],
     actions: ['participants-down','participants-confirm','participants-up'],
   },

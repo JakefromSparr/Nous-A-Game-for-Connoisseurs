@@ -16,6 +16,15 @@ import { ROUTES } from '../src/constants/routes.js';
 import questionDeck from '../src/constants/questionDeck.js';
 import { ID_TO_GROUPS } from '../src/constants/questionGroups.js';
 import { TRAIT_LOADINGS } from '../src/constants/traitConfig.js';
+import {
+  WAITING_ROOM_PHASES,
+  getWaitingRoomLabels,
+} from '../src/constants/waitingRoom.js';
+import {
+  chooseAccept,
+  chooseTurnBack,
+  confirmGathering,
+} from '../src/engine/waitingRoomEngine.js';
 
 function answer(kind, label = 'Potential') {
   State.resetGame();
@@ -82,9 +91,11 @@ test('fractional traits save and load', () => {
 
   const olderSave = { ...saved.data };
   delete olderSave.fateEvidence;
+  delete olderSave.waitingRoomPhase;
   const loadedOlderSave = validateOnLoad(olderSave);
   assert.equal(loadedOlderSave.ok, true);
   assert.deepEqual(loadedOlderSave.data.fateEvidence, []);
+  assert.equal(loadedOlderSave.data.waitingRoomPhase, WAITING_ROOM_PHASES.ENTRY);
 });
 
 test('Final Reading cites actual choices', () => {
@@ -149,6 +160,8 @@ test('screens, routes, and HTML stay in sync', async () => {
 
   assert.deepEqual([...htmlScreens].sort(), [...screenIds].sort());
   assert.deepEqual(Object.keys(ROUTES).sort(), [...screenIds].sort());
+  assert.match(html, /<strong>Chances:<\/strong>/);
+  assert.doesNotMatch(html, /<strong>Lives:<\/strong>/);
 
   for (const [screen, route] of Object.entries(ROUTES)) {
     assert.equal(route.labels.length, 3, `${screen} must have three labels`);
@@ -156,7 +169,7 @@ test('screens, routes, and HTML stay in sync', async () => {
   }
 });
 
-test('First Entry uses only cards 001–003 and starts with three or four Thread', () => {
+test('First Entry uses only cards 001–003 and starts with four or five Thread', () => {
   const base = {
     questionDeck,
     firstEntryActive: true,
@@ -167,8 +180,8 @@ test('First Entry uses only cards 001–003 and starts with three or four Thread
   const withTassel = Round.startRound({ ...base, tasselTaken: true });
 
   assert.deepEqual(withoutTassel.roundQuestionIds, ['001', '002', '003']);
-  assert.equal(withoutTassel.thread, 3);
-  assert.equal(withTassel.thread, 4);
+  assert.equal(withoutTassel.thread, 4);
+  assert.equal(withTassel.thread, 5);
   assert.equal(withTassel.isIntroRound, true);
 });
 
@@ -199,7 +212,7 @@ test('normal rounds deal six unanswered non-tutorial cards from any tier', () =>
     questionDeck: highTierDeck,
     answeredQuestionIds: new Set(),
     firstEntryActive: false,
-    nextRoundT0: 4,
+    nextRoundT0: 5,
     activeRoundEffects: [],
     difficultyLevel: 1,
     roundsWon: 2,
@@ -320,13 +333,13 @@ test('Tier 5 cards stay gated until two normal rounds are won', () => {
   assert.deepEqual(prepareCrossroads(State.getState()).candidates, [102]);
 });
 
-test('normal rounds reset to four Thread unless the tassel carries up to two', () => {
+test('normal rounds reset to five Thread unless the tassel carries up to three', () => {
   const withoutTassel = Round.startRound({
     questionDeck,
     answeredQuestionIds: new Set(),
     firstEntryActive: false,
     tasselTaken: false,
-    nextRoundT0: 6,
+    nextRoundT0: 8,
     activeRoundEffects: [],
     roundsWon: 0,
   });
@@ -336,31 +349,61 @@ test('normal rounds reset to four Thread unless the tassel carries up to two', (
     answeredQuestionIds: new Set(),
     firstEntryActive: false,
     tasselTaken: true,
-    nextRoundT0: 6,
+    nextRoundT0: 8,
     activeRoundEffects: [],
     roundsWon: 0,
   });
 
-  assert.equal(withoutTassel.thread, 4);
-  assert.equal(withTassel.thread, 6);
+  assert.equal(withoutTassel.thread, 5);
+  assert.equal(withTassel.thread, 8);
   assert.equal(Round.tieOff({
     roundScore: 3,
     notWrongCount: 3,
     tasselTaken: false,
-    thread: 4,
-  }).nextRoundT0, 4);
-  assert.equal(Round.tieOff({
-    roundScore: 3,
-    notWrongCount: 3,
-    tasselTaken: true,
-    thread: 1,
+    thread: 5,
   }).nextRoundT0, 5);
   assert.equal(Round.tieOff({
     roundScore: 3,
     notWrongCount: 3,
     tasselTaken: true,
-    thread: 4,
+    thread: 1,
   }).nextRoundT0, 6);
+  assert.equal(Round.tieOff({
+    roundScore: 3,
+    notWrongCount: 3,
+    tasselTaken: true,
+    thread: 4,
+  }).nextRoundT0, 8);
+});
+
+test('every gathering begins with three Chances', () => {
+  State.resetGame();
+  State.initializeGame(1);
+  assert.equal(State.getState().lives, 3);
+
+  State.initializeGame(20);
+  assert.equal(State.getState().lives, 3);
+});
+
+test('Waiting Room requires the false Accept before resolving No Use or No Us', () => {
+  const observed = confirmGathering(3);
+  assert.deepEqual(getWaitingRoomLabels(observed), ['Turn Back', 'Nous', 'Accept']);
+  assert.equal(observed.observedCount, 4);
+  assert.match(observed.waitingRoomReceiptText, /There seems to be 4 here/);
+
+  const earlyTurnBack = chooseTurnBack(observed);
+  assert.equal(earlyTurnBack.waitingRoomPhase, WAITING_ROOM_PHASES.ENTRY);
+
+  const rejected = { ...observed, ...chooseAccept(observed) };
+  assert.equal(rejected.waitingRoomPhase, WAITING_ROOM_PHASES.ACCEPT_REJECTED);
+
+  const noUse = { ...rejected, ...chooseTurnBack(rejected) };
+  assert.equal(noUse.waitingRoomPhase, WAITING_ROOM_PHASES.RESOLVED_NO_USE);
+  assert.deepEqual(getWaitingRoomLabels(noUse), ['No Use', 'Nous', 'Accept']);
+
+  const noUs = { ...rejected, ...chooseAccept(rejected) };
+  assert.equal(noUs.waitingRoomPhase, WAITING_ROOM_PHASES.RESOLVED_NO_US);
+  assert.deepEqual(getWaitingRoomLabels(noUs), ['Turn Back', 'Nous', 'No Us']);
 });
 
 test('Crossroads offers two packet cards and spends only the selected path', () => {

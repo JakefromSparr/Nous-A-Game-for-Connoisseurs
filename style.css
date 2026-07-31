@@ -362,6 +362,79 @@ p + p {
   font-size: 1.45em;
 }
 
+#participant-count-value {
+  position: relative;
+  display: inline-block;
+}
+
+#participant-count-value::after {
+  content: '';
+  position: absolute;
+  left: -0.16em;
+  right: -0.16em;
+  top: 53%;
+  height: 2px;
+  background: var(--oxblood);
+  box-shadow: 0 0 1px rgba(93, 19, 24, 0.55);
+  opacity: 0;
+  transform: rotate(-7deg) scaleX(0);
+  transform-origin: left center;
+}
+
+#participant-count-red {
+  display: inline-block;
+  margin-left: 0.22em;
+  color: var(--oxblood);
+  font-family: var(--body-font);
+  font-size: 1.08em;
+  font-style: italic;
+  font-weight: 600;
+  opacity: 0;
+  transform: translate(-0.18em, 0.12em) rotate(-5deg);
+}
+
+#participant-panel.is-count-correcting #participant-count-value {
+  animation: countCorrects 420ms steps(3, end);
+}
+
+#participant-panel.is-count-overwritten #participant-count-value::after {
+  animation: countStrike 260ms ease-out forwards;
+}
+
+#participant-panel.is-count-overwritten #participant-count-red {
+  animation: redCountWrites 520ms cubic-bezier(0.16, 0.78, 0.26, 1) forwards;
+}
+
+@keyframes countCorrects {
+  0% { opacity: 0.15; transform: translateX(2px); }
+  35% { opacity: 0.82; transform: translateX(-1px); }
+  68% { opacity: 0.55; transform: translateX(1px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes countStrike {
+  from { opacity: 0; transform: rotate(-7deg) scaleX(0); }
+  20% { opacity: 1; }
+  to { opacity: 1; transform: rotate(-7deg) scaleX(1); }
+}
+
+@keyframes redCountWrites {
+  0% {
+    opacity: 0;
+    clip-path: inset(0 100% 0 0);
+    transform: translate(-0.34em, 0.18em) rotate(-8deg);
+  }
+  70% {
+    opacity: 0.88;
+    clip-path: inset(0 0 0 0);
+  }
+  100% {
+    opacity: 1;
+    clip-path: inset(0 0 0 0);
+    transform: translate(0, 0.08em) rotate(-5deg);
+  }
+}
+
 .waiting-room-receipt {
   max-width: 32ch;
   margin: 1.7rem auto 0;
@@ -1628,6 +1701,108 @@ p + p {
 
 .ctrl.is-kachunking .button-label {
   animation: glassKachunk 630ms cubic-bezier(0.22, 0.58, 0.24, 1) both;
+}
+
+.ctrl.is-waiting-latched,
+.ctrl.is-kachunking.is-waiting-latched {
+  transform: translateY(11px) scaleY(0.98);
+  filter: brightness(0.8);
+  box-shadow:
+    0 0 0 #180d08,
+    0 1px 2px rgba(0, 0, 0, 0.66),
+    inset 0 5px 9px rgba(18, 8, 3, 0.62);
+  animation: waitingButtonLatch 460ms cubic-bezier(0.24, 0.64, 0.3, 1) both;
+}
+
+.ctrl.is-waiting-latched .button-label,
+.ctrl.is-kachunking.is-waiting-latched .button-label {
+  transform: translateY(3px) scale(0.97);
+  filter: brightness(0.72);
+  animation: waitingGlassLatch 460ms cubic-bezier(0.24, 0.64, 0.3, 1) both;
+}
+
+.ctrl.is-waiting-rebounding {
+  pointer-events: none;
+  animation: waitingButtonRebound 580ms cubic-bezier(0.16, 0.66, 0.22, 1) both;
+}
+
+.ctrl.is-waiting-rebounding .button-label {
+  animation: waitingGlassRebound 580ms cubic-bezier(0.16, 0.66, 0.22, 1) both;
+}
+
+.ctrl .button-label.is-waiting-word-shaking .button-answer {
+  animation: waitingWordRefuses 650ms cubic-bezier(0.22, 0.7, 0.28, 1) both;
+}
+
+@keyframes waitingButtonLatch {
+  0% {
+    transform: translateY(0);
+    filter: none;
+  }
+  58% {
+    transform: translateY(12px) scaleY(0.976);
+    filter: brightness(0.76);
+  }
+  100% {
+    transform: translateY(11px) scaleY(0.98);
+    filter: brightness(0.8);
+  }
+}
+
+@keyframes waitingGlassLatch {
+  from {
+    transform: none;
+    filter: none;
+  }
+  to {
+    transform: translateY(3px) scale(0.97);
+    filter: brightness(0.72);
+  }
+}
+
+@keyframes waitingButtonRebound {
+  0% {
+    transform: translateY(11px) scaleY(0.98);
+    filter: brightness(0.8);
+    box-shadow:
+      0 0 0 #180d08,
+      0 1px 2px rgba(0, 0, 0, 0.66),
+      inset 0 5px 9px rgba(18, 8, 3, 0.62);
+  }
+  72% {
+    transform: translateY(1px) scaleY(0.998);
+    filter: brightness(0.98);
+  }
+  100% {
+    transform: translateY(0);
+    filter: none;
+    box-shadow:
+      0 9px 0 #180d08,
+      0 12px 14px rgba(0, 0, 0, 0.58),
+      inset 0 1px 0 rgba(239, 206, 164, 0.2),
+      inset 0 -4px 6px rgba(25, 12, 5, 0.36);
+  }
+}
+
+@keyframes waitingGlassRebound {
+  from {
+    transform: translateY(3px) scale(0.97);
+    filter: brightness(0.72);
+  }
+  to {
+    transform: none;
+    filter: none;
+  }
+}
+
+@keyframes waitingWordRefuses {
+  0%,
+  100% { transform: translateY(-0.5px); }
+  15% { transform: translate(-3px, -0.5px) skewX(-3deg); }
+  31% { transform: translate(3px, -0.5px) skewX(2deg); }
+  46% { transform: translate(-2px, -0.5px); }
+  62% { transform: translate(1px, -0.5px); }
+  78% { transform: translate(-0.5px, -0.5px); }
 }
 
 @keyframes buttonKachunk {

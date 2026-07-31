@@ -25,7 +25,7 @@ export const COACH_STEPS = [
   {
     id: 'lobby-rounds',
     screen: SCREENS.GAME_LOBBY,
-    text: 'Rounds to Win: get this to zero. Lose lives when your thread severs.',
+    text: 'Rounds to Win: get this to zero. Spend a Chance when your thread severs.',
     anchorId: 'rounds-display',
     placement: 'right',
   },
@@ -114,7 +114,7 @@ export const COACH_STEPS = [
   {
     id: 'severed',
     screen: SCREENS.THREAD_SEVERED,
-    text: 'Thread at zero severs the round. You lose a life and your points turn to dust.',
+    text: 'Thread at zero severs the round. You spend a Chance and your points turn to dust.',
     anchorId: 'lost-points-display',
     placement: 'top',
   },

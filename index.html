@@ -46,7 +46,10 @@
         <div id="participant-panel" role="group" aria-label="Participants">
           <p>
             <strong>Participants:</strong>
-            <span id="participant-count-display">1</span>
+            <span id="participant-count-display" aria-live="polite">
+              <span id="participant-count-value">1</span>
+              <span id="participant-count-red" aria-hidden="true"></span>
+            </span>
           </p>
           <p id="participant-flavor" hidden class="subtitle waiting-room-receipt"></p>
         </div>
@@ -108,7 +111,7 @@
 
         <div id="hud">
           <p class="hud-counter" data-note="how long you’ll last" tabindex="0">
-            <strong>Lives:</strong> <span id="lives-display">0</span>
+            <strong>Chances:</strong> <span id="lives-display">0</span>
           </p>
           <p class="hud-counter" data-note="how far you’ll go" tabindex="0">
             <strong>Rounds to Win:</strong> <span id="rounds-display">3</span>

@@ -24,8 +24,7 @@ export const GRIN_PHASES = {
 export const FLAVOR_TEXT = {
   WAITING_ROOM_OBSERVED: {
     [GRIN_PHASES.WHISPER]: [
-      'How strange.\n\nIt feels like there are {observedWord} here with Us tonight.',
-      '{gatheredWord}, you say?\n\nWe sense a {observedOrdinal}.',
+      'How strange.\n\nThere seems to be {observed} here.',
     ],
     [GRIN_PHASES.GRIN]: [
       '{gatheredWord}, you say?\n\nThen who is breathing behind you?',

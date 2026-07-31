@@ -1,6 +1,7 @@
 // src/validator.js
 import { z } from 'zod';
 import { SCREENS } from './constants/screens.js';
+import { WAITING_ROOM_PHASES } from './constants/waitingRoom.js';
 
 // Keep this in sync with your exported screen IDs.
 export const Screen = z.enum(Object.values(SCREENS));
@@ -62,6 +63,7 @@ export const persistedGameStateSchema = z.object({
   observedCount: z.number().int().min(0).default(0),
   waitingRoomReceiptText: z.string().default(''),
   waitingRoomReceiptVisible: z.boolean().default(false),
+  waitingRoomPhase: z.enum(Object.values(WAITING_ROOM_PHASES)).default(WAITING_ROOM_PHASES.ENTRY),
   grinPhase: z.string().nullable().default(null),
   firstEntryActive: z.boolean().default(false),
   tasselTaken: z.boolean().default(false),
