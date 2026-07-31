@@ -105,7 +105,7 @@ const questions = [
       },
       {
         label: 'H',
-        answerClass: 'TYPICAL',
+        answerClass: 'REVELATORY',
         explanation:
           'Correct. In the word "alphabet" itself, "h" follows "p". But did you know there was another way to be right?',
       },
@@ -119,6 +119,33 @@ const questions = [
   },
 
   // ─────────────────── Tier 1 ───────────────────
+ {
+  id: 101,
+  category: 'Soul',
+  tier: 1,
+  title: 'Present Company',
+  text: 'Who is present when no one else is here?',
+  answers: [
+    {
+      label: 'You',
+      answerClass: 'TYPICAL',
+      explanation:
+        'Correct. No one else excludes everyone except the person being addressed.',
+    },
+    {
+      label: 'No one else',
+      answerClass: 'REVELATORY',
+      explanation:
+        'Also correct. If no one else is here then no one else is here. Right?',
+    },
+    {
+      label: 'Everyone',
+      answerClass: 'WRONG',
+      explanation:
+        'No. Absence does not become company simply because it has been noticed.',
+    },
+  ],
+},
   {
     id: 102,
     category: 'Body',
@@ -869,6 +896,33 @@ const questions = [
       answerClass: 'WRONG',
       explanation:
         'No. Cold can cause the reaction, but that would mean the temperature had fallen.',
+    },
+  ],
+},
+  {
+  id: 218,
+  category: 'Mind',
+  tier: 2,
+  title: 'Said Once',
+  text: 'Which of these words appears only once in all of Shakespeare’s work?',
+  answers: [
+    {
+      label: 'Bedazzled',
+      answerClass: 'TYPICAL',
+      explanation:
+        'Correct. Shakespeare uses it once in The Taming of the Shrew. A dazzling word, given only one entrance.',
+    },
+    {
+      label: 'Omen',
+      answerClass: 'REVELATORY',
+      explanation:
+        'Also correct. It appears once, in Hamlet. Some warnings only need to be given once.',
+    },
+    {
+      label: 'Slaughterhouse',
+      answerClass: 'WRONG',
+      explanation:
+        'No. Shakespeare returned to the slaughterhouse more than once.',
     },
   ],
 },
