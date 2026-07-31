@@ -396,7 +396,7 @@ const ACTIONS = {
 
     const roundsWonNext =
       (s.roundsWon || 0) + (!s.isIntroRound && s.roundWon ? 1 : 0);
-    const isFinal = roundsWonNext >= (s.roundsToWin || 3);
+    const isFinal = roundsWonNext >= (s.roundsToWin || 5);
     const next = isFinal
       ? SCREENS.FINAL_READING
       : SCREENS.GAME_LOBBY;
