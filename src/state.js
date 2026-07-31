@@ -10,7 +10,7 @@ export const DEFAULTS = {
   baseT0: 5,           // standard starting Thread
   tasselCarryCap: 3,
   startingChances: 3,
-  roundsToWin: 3,      // how many rounds to win the game
+  roundsToWin: 5,      // how many rounds to win the game
   roundCardLimitBase: 6,
   roundCardLimitMax: 10,
 };
