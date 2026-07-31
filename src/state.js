@@ -66,6 +66,7 @@ function buildInitialState() {
     completedFateCardIds: new Set(),
     questionHistory: {},
     choiceEvidence: [],
+    fateEvidence: [],
 
     /* ---- Fate state ---- */
     activeRoundEffects: [],
@@ -216,6 +217,7 @@ function initializeGame(participants = 1) {
     completedFateCardIds: new Set(),
     questionHistory: {},
     choiceEvidence: [],
+    fateEvidence: [],
 
     // Fate state
     activeRoundEffects: [],
