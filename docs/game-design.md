@@ -77,6 +77,17 @@ But the game is really playing them.
   - If `roundWon`, then `roundsWon++`. Always `roundNumber++`.
   - Clear round scratch; return to **Game Lobby**, or proceed to **Final Reading** when `roundsWon === roundsToWin`.
 
+### Final Reading Composition
+
+- The Reading is deterministic for a saved run: reloading cannot produce a different personality.
+- It ranks the hidden **X/Y/Z** deltas by magnitude and interprets both the strongest axis and a secondary counter-pressure.
+- Its confidence language depends on trait magnitude and the amount of unconstrained evidence collected.
+- The answer-class tally describes the group’s recurring habit: familiar anchors, lateral reframing, plausible mistakes, or divided lenses.
+- It selects up to two diagnostic first-pass answers and explains what made those choices revealing. Recycled answers are excluded because their options were constrained.
+- Fate selections are stored separately and interpreted as immediacy, leverage, burden, protection, or refusal.
+- The closing consensus claim and prediction are assembled from the same pattern, so they feel personal without requiring an external AI service.
+- Question weights remain the authority for what each answer means. The Reading gives those deltas a voice; it does not make the current weight model more scientific than it is.
+
 ---
 
 ## Data Formats (Reference)
