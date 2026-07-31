@@ -808,11 +808,11 @@ const questions = [
         'Also left behind. The taken one vanishes quickly. Those who remain must decide when absence becomes proof.',
     },
     {
-      label: 'A familiar',
-      answerClass: 'WRONG',
-      explanation:
-        'No. A familiar serves a practitioner. You're thinking of when something looks familiar but isn't.',
-    },
+  label: 'A familiar',
+  answerClass: 'WRONG',
+  explanation:
+    "No. A familiar serves a practitioner. You're thinking of when something looks familiar but isn't.",
+},
   ],
 },
 
