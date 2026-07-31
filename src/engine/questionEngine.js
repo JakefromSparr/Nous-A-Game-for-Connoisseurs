@@ -30,6 +30,7 @@ function buildAnswers(q) {
     return {
       key: keys[i],
       label: label || 'The words have faded.',
+      buttonLabel: a.buttonLabel ?? '',
       answerClass: String(a.answerClass || '').toUpperCase(),
       explanation: a.explanation || 'Nous offers no explanation.',
       unavailable: selectedLabels.has(label),
@@ -58,9 +59,16 @@ function hasAvailableAnswer(question, state) {
 
 function isAvailableAtCurrentProgress(question, state) {
   const tier = Number(question.tier);
-  if (state.isIntroRound || state.tutorial?.active) return tier === 0;
-  if (tier >= 1 && tier <= 4) return true;
-  return tier === 5 && (state.roundsWon || 0) >= 2;
+  if (state.isIntroRound || state.tutorial?.active) {
+    return tier === 0;
+  }
+  if (tier >= 1 && tier <= 3) {
+    return true;
+  }
+  if (tier === 4 || tier === 5) {
+    return (state.roundNumber || 1) >= 3;
+  }
+  return false;
 }
 
 function prepareDrawPile(state) {
