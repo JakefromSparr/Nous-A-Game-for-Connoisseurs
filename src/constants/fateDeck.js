@@ -92,7 +92,69 @@ const fateDeck = [
         }
       }
     ]
-  }
+  },
+  {
+  id: "DYN006",
+  title: "The Match Maker",
+  text:
+    "A woman waits beside the road with three matches resting in her palm. " +
+    "Every wrong answer this round will consume 3 Thread instead of 2.",
+  choices: [
+    {
+      id: "DYN006:0",
+      label: "Shove Past Her",
+      effect: [
+        {
+          type: "ANSWER_CLASS_BONUS",
+          answerClass: "TYPICAL",
+          threadDelta: 1,
+          flavorText:
+            "The first match burns steadily. Familiar answers reinforce the Thread, but every mistake now cuts deeper."
+        },
+        {
+          type: "ANSWER_CLASS_BONUS",
+          answerClass: "WRONG",
+          threadDelta: -1
+        }
+      ]
+    },
+    {
+      id: "DYN006:1",
+      label: "Thank Her",
+      effect: [
+        {
+          type: "ANSWER_CLASS_BONUS",
+          answerClass: "REVELATORY",
+          pointsDelta: 1,
+          flavorText:
+            "The second match reveals what was always there. Revelatory answers gain 1 additional point, but every mistake now cuts deeper."
+        },
+        {
+          type: "ANSWER_CLASS_BONUS",
+          answerClass: "WRONG",
+          threadDelta: -1
+        }
+      ]
+    },
+    {
+      id: "DYN006:2",
+      label: "Take The Matches",
+      effect: [
+        {
+          type: "POWER_UP",
+          power: "MATCHBOOK",
+          flavorText:
+            "She closes your fingers around the matchbook. It may be useful later. Every mistake this round still cuts deeper."
+        },
+        {
+          type: "ANSWER_CLASS_BONUS",
+          answerClass: "WRONG",
+          threadDelta: -1
+        }
+      ]
+    }
+  ]
+}
 ];
 
 export default fateDeck;
