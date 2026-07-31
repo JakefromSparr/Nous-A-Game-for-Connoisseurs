@@ -1,184 +1,410 @@
 // src/engine/questionEngine.js
+
 import { State } from '../state.js';
 import { shuffle } from './utils.js';
-import { OUTCOME, OUTCOME_EFFECT, WEAVE } from '../constants/answerLogic.js';
+import {
+  OUTCOME,
+  OUTCOME_EFFECT,
+  WEAVE,
+} from '../constants/answerLogic.js';
 import { applyTraitDelta } from './traitEngine.js';
 
-/* ---------- Outcome fallback (legacy decks only) ---------- */
-function getKind(q, key) {
-  if (q.answerKinds && q.answerKinds[key]) return q.answerKinds[key];
+/* ---------- Outcome fallback for legacy questions ---------- */
 
-  if (q.correct) {
-    if (key === q.correct) return OUTCOME.TYPICAL;
-    const others = ['A', 'B', 'C'].filter(k => k !== q.correct);
-    return key === others[0] ? OUTCOME.REVELATORY : OUTCOME.WRONG;
+function getKind(question, key) {
+  if (question.answerKinds?.[key]) {
+    return question.answerKinds[key];
   }
-  return key === 'C' ? OUTCOME.WRONG : OUTCOME.TYPICAL;
+
+  if (question.correct) {
+    if (key === question.correct) {
+      return OUTCOME.TYPICAL;
+    }
+
+    const otherKeys = ['A', 'B', 'C'].filter(
+      candidateKey => candidateKey !== question.correct
+    );
+
+    return key === otherKeys[0]
+      ? OUTCOME.REVELATORY
+      : OUTCOME.WRONG;
+  }
+
+  return key === 'C'
+    ? OUTCOME.WRONG
+    : OUTCOME.TYPICAL;
 }
 
-/* ---------- Build shuffled A/B/C answers for UI ---------- */
-function buildAnswers(q) {
-  const S = State.getState();
-  const previous = S.questionHistory?.[String(q.id)];
-  const selectedLabels = new Set(
-    Array.isArray(previous) ? previous : (previous ? [previous] : [])
-  );
-  const shuffled = shuffle([...(q.answers || [])]);
-  const keys = ['A', 'B', 'C'];
-  let answers = shuffled.slice(0, 3).map((a, i) => {
-    const label = a.label ?? '';
-    return {
-  key: keys[i],
-  label: label || 'The words have faded.',
-  buttonLabel: a.buttonLabel,
-  answerClass: String(a.answerClass || '').toUpperCase(),
-  explanation: a.explanation || 'Nous offers no explanation.',
-  unavailable: selectedLabels.has(label),
-};
-  });
+/* ---------- Answer identity ---------- */
 
-  if (S.activePowerUps?.includes('REMOVE_WRONG_ANSWER')) {
-    const wrong = answers.findIndex((answer) =>
-      answer.answerClass === OUTCOME.WRONG && !answer.unavailable
-    );
-    if (wrong >= 0) answers.splice(wrong, 1);
-    S.activePowerUps = S.activePowerUps.filter(p => p !== 'REMOVE_WRONG_ANSWER');
+/**
+ * Normal questions are identified by their visible label.
+ *
+ * Tier 3 questions may display the same label three times, so their
+ * buttonLabel becomes the identity used for history and repeat handling.
+ */
+function getAnswerIdentity(answer) {
+  return answer?.buttonLabel || answer?.label || '';
+}
+
+function getPreviousSelections(question, state) {
+  const previous =
+    state.questionHistory?.[String(question.id)];
+
+  if (Array.isArray(previous)) {
+    return previous;
   }
+
+  return previous ? [previous] : [];
+}
+
+/* ---------- Build shuffled A/B/C answers for the UI ---------- */
+
+function buildAnswers(question) {
+  const state = State.getState();
+
+  const selectedAnswers = new Set(
+    getPreviousSelections(question, state)
+  );
+
+  const shuffledAnswers = shuffle([
+    ...(question.answers || []),
+  ]);
+
+  const keys = ['A', 'B', 'C'];
+
+  let answers = shuffledAnswers
+    .slice(0, 3)
+    .map((answer, index) => {
+      const label =
+        answer.label || 'The words have faded.';
+
+      const answerIdentity =
+        getAnswerIdentity(answer);
+
+      return {
+        key: keys[index],
+        label,
+        buttonLabel: answer.buttonLabel,
+        answerIdentity,
+        answerClass: String(
+          answer.answerClass || ''
+        ).toUpperCase(),
+        explanation:
+          answer.explanation ||
+          'Nous offers no explanation.',
+        unavailable:
+          selectedAnswers.has(answerIdentity),
+      };
+    });
+
+  if (
+    state.activePowerUps?.includes(
+      'REMOVE_WRONG_ANSWER'
+    )
+  ) {
+    const wrongIndex = answers.findIndex(
+      answer =>
+        answer.answerClass === OUTCOME.WRONG &&
+        !answer.unavailable
+    );
+
+    if (wrongIndex >= 0) {
+      answers.splice(wrongIndex, 1);
+    }
+
+    state.activePowerUps =
+      state.activePowerUps.filter(
+        power => power !== 'REMOVE_WRONG_ANSWER'
+      );
+  }
+
   return answers;
 }
 
-function selectedLabelsFor(question, state) {
-  const previous = state.questionHistory?.[String(question.id)];
-  return new Set(Array.isArray(previous) ? previous : (previous ? [previous] : []));
-}
+/* ---------- Availability and progression ---------- */
 
 function hasAvailableAnswer(question, state) {
-  const selected = selectedLabelsFor(question, state);
-  return (question.answers || []).some((answer) => !selected.has(answer.label));
+  const selectedAnswers = new Set(
+    getPreviousSelections(question, state)
+  );
+
+  return (question.answers || []).some(answer => {
+    const identity = getAnswerIdentity(answer);
+    return !selectedAnswers.has(identity);
+  });
 }
 
-function isAvailableAtCurrentProgress(question, state) {
+function isAvailableAtCurrentProgress(
+  question,
+  state
+) {
   const tier = Number(question.tier);
-  if (state.isIntroRound || state.tutorial?.active) {
+
+  if (
+    state.isIntroRound ||
+    state.tutorial?.active
+  ) {
     return tier === 0;
   }
+
   if (tier >= 1 && tier <= 3) {
     return true;
   }
+
   if (tier === 4 || tier === 5) {
     return (state.roundNumber || 1) >= 3;
   }
+
   return false;
 }
 
+/* ---------- Prepare the current round's draw pile ---------- */
+
 function prepareDrawPile(state) {
   const deck = state.questionDeck || [];
-  const byId = new Map(deck.map((question) => [String(question.id), question]));
-  const roundIds = Array.isArray(state.roundQuestionIds) ? state.roundQuestionIds : [];
-  let drawPile = Array.isArray(state.roundDrawPile) ? [...state.roundDrawPile] : [];
-  let isRepeat = !!state.roundIsRecycling;
 
-  drawPile = drawPile.filter((id) => {
-    const question = byId.get(String(id));
+  const questionsById = new Map(
+    deck.map(question => [
+      String(question.id),
+      question,
+    ])
+  );
+
+  const roundQuestionIds = Array.isArray(
+    state.roundQuestionIds
+  )
+    ? state.roundQuestionIds
+    : [];
+
+  let drawPile = Array.isArray(
+    state.roundDrawPile
+  )
+    ? [...state.roundDrawPile]
+    : [];
+
+  let isRepeat = Boolean(
+    state.roundIsRecycling
+  );
+
+  drawPile = drawPile.filter(id => {
+    const question = questionsById.get(
+      String(id)
+    );
+
     return (
       question &&
-      isAvailableAtCurrentProgress(question, state) &&
+      isAvailableAtCurrentProgress(
+        question,
+        state
+      ) &&
       hasAvailableAnswer(question, state)
     );
   });
 
-  if (!drawPile.length && roundIds.length) {
-    drawPile = shuffle([...roundIds]).filter((id) => {
-      const question = byId.get(String(id));
+  if (
+    drawPile.length === 0 &&
+    roundQuestionIds.length > 0
+  ) {
+    drawPile = shuffle([
+      ...roundQuestionIds,
+    ]).filter(id => {
+      const question = questionsById.get(
+        String(id)
+      );
+
       return (
         question &&
-        isAvailableAtCurrentProgress(question, state) &&
-        hasAvailableAnswer(question, state)
+        isAvailableAtCurrentProgress(
+          question,
+          state
+        ) &&
+        hasAvailableAnswer(
+          question,
+          state
+        )
       );
     });
+
     isRepeat = true;
   }
 
-  return { byId, drawPile, isRepeat };
+  return {
+    questionsById,
+    drawPile,
+    isRepeat,
+  };
 }
 
+/* ---------- Crossroads ---------- */
+
 export function prepareCrossroads(_state) {
-  const S = State.getState();
-  const prepared = prepareDrawPile(S);
+  const state = State.getState();
+  const prepared = prepareDrawPile(state);
+
   const firstId = prepared.drawPile[0];
-  const firstQuestion = prepared.byId.get(String(firstId));
-  const differentCategoryId = prepared.drawPile.slice(1).find((id) => {
-    const question = prepared.byId.get(String(id));
-    return question?.category && question.category !== firstQuestion?.category;
-  });
-  const candidates = firstId === undefined
-    ? []
-    : [
-        firstId,
-        differentCategoryId ?? prepared.drawPile[1],
-      ].filter((id) => id !== undefined);
+
+  const firstQuestion =
+    firstId === undefined
+      ? null
+      : prepared.questionsById.get(
+          String(firstId)
+        );
+
+  const differentCategoryId =
+    prepared.drawPile
+      .slice(1)
+      .find(id => {
+        const question =
+          prepared.questionsById.get(
+            String(id)
+          );
+
+        return (
+          question?.category &&
+          question.category !==
+            firstQuestion?.category
+        );
+      });
+
+  const candidates =
+    firstId === undefined
+      ? []
+      : [
+          firstId,
+          differentCategoryId ??
+            prepared.drawPile[1],
+        ].filter(
+          id => id !== undefined
+        );
 
   return {
     candidates,
     patch: {
-      roundDrawPile: prepared.drawPile,
-      roundIsRecycling: prepared.isRepeat,
-      crossroadCandidates: candidates,
+      roundDrawPile:
+        prepared.drawPile,
+      roundIsRecycling:
+        prepared.isRepeat,
+      crossroadCandidates:
+        candidates,
       crossroadSelection: 0,
     },
   };
 }
 
-/* ---------- Draw from this round's finite packet, then recycle it ---------- */
-export function drawQuestion(_state, requestedId = null) {
-  const S = State.getState();
-  const prepared = prepareDrawPile(S);
-  const { byId, isRepeat } = prepared;
-  const drawPile = [...prepared.drawPile];
+/* ---------- Draw a question ---------- */
 
-  let q = null;
+export function drawQuestion(
+  _state,
+  requestedId = null
+) {
+  const state = State.getState();
+  const prepared = prepareDrawPile(state);
+
+  const {
+    questionsById,
+    isRepeat,
+  } = prepared;
+
+  const drawPile = [
+    ...prepared.drawPile,
+  ];
+
+  let question = null;
   let answers = [];
+
   if (requestedId !== null) {
-    const requestedIndex = drawPile.findIndex(
-      (id) => String(id) === String(requestedId)
-    );
+    const requestedIndex =
+      drawPile.findIndex(
+        id =>
+          String(id) ===
+          String(requestedId)
+      );
+
     if (requestedIndex >= 0) {
-      const [selectedId] = drawPile.splice(requestedIndex, 1);
-      q = byId.get(String(selectedId)) || null;
-      if (q) answers = buildAnswers(q);
+      const [selectedId] =
+        drawPile.splice(
+          requestedIndex,
+          1
+        );
+
+      question =
+        questionsById.get(
+          String(selectedId)
+        ) || null;
+
+      if (question) {
+        answers =
+          buildAnswers(question);
+      }
     }
   }
 
-  while (drawPile.length && !q) {
+  while (
+    drawPile.length > 0 &&
+    !question
+  ) {
     const nextId = drawPile.shift();
-    const candidate = byId.get(String(nextId));
-    if (!candidate) continue;
-    const candidateAnswers = buildAnswers(candidate);
-    if (!candidateAnswers.some((answer) => !answer.unavailable)) continue;
-    q = candidate;
+
+    const candidate =
+      questionsById.get(
+        String(nextId)
+      );
+
+    if (!candidate) {
+      continue;
+    }
+
+    const candidateAnswers =
+      buildAnswers(candidate);
+
+    const hasSelectableAnswer =
+      candidateAnswers.some(
+        answer => !answer.unavailable
+      );
+
+    if (!hasSelectableAnswer) {
+      continue;
+    }
+
+    question = candidate;
     answers = candidateAnswers;
   }
 
-  if (!q) {
+  if (!question) {
     return {
       question: null,
       answers: [],
       category: '',
-      patch: { roundDrawPile: drawPile, roundIsRecycling: isRepeat },
+      patch: {
+        roundDrawPile: drawPile,
+        roundIsRecycling:
+          isRepeat,
+      },
     };
   }
 
-  const tierSeen = { ...(S.tierSeen || {}) };
-  tierSeen[q.tier || 0] = (tierSeen[q.tier || 0] || 0) + 1;
+  const tierSeen = {
+    ...(state.tierSeen || {}),
+  };
+
+  const tier = question.tier || 0;
+
+  tierSeen[tier] =
+    (tierSeen[tier] || 0) + 1;
 
   return {
-    question: q,
+    question,
     answers,
-    category: q.category || q.title || '',
+    category:
+      question.category ||
+      question.title ||
+      '',
     patch: {
       roundDrawPile: drawPile,
       roundIsRecycling: isRepeat,
-      currentQuestionIsRepeat: isRepeat,
+      currentQuestionIsRepeat:
+        isRepeat,
       crossroadCandidates: [],
       crossroadSelection: 0,
       tierSeen,
@@ -186,107 +412,263 @@ export function drawQuestion(_state, requestedId = null) {
   };
 }
 
-/* ---------- Evaluate chosen answer (baseline already paid on Pull) ---------- */
-export function evaluate(choiceIndex, _state) {
-  const S = State.getState();
-  const q = S.currentQuestion;
-  const a = S.currentAnswers?.[choiceIndex];
-  if (!q || !a) return { patch: {} };
+/* ---------- Evaluate the selected answer ---------- */
 
-  const key  = (a.key || '').toUpperCase();
-  const cls  = String(a.answerClass || '').toUpperCase();
-  const kind = (cls === 'TYPICAL' || cls === 'REVELATORY' || cls === 'WRONG') ? cls : getKind(q, key);
-  const eff  = OUTCOME_EFFECT[kind] || { points: 0, threadDelta: 0 };
+export function evaluate(
+  choiceIndex,
+  _state
+) {
+  const state = State.getState();
 
-  // Round points (weave doubles); thread delta is post-baseline
-  const weaveMult = S.weavePrimed ? WEAVE.multiplier : 1;
-  const gainedPts = (eff.points || 0) * weaveMult;
+  const question =
+    state.currentQuestion;
 
-  // Tally by key
-  const tally = { ...(S.roundAnswerTally || { A: 0, B: 0, C: 0 }) };
-  tally[key] = (tally[key] || 0) + 1;
+  const answer =
+    state.currentAnswers?.[
+      choiceIndex
+    ];
 
-  const isNotWrong = (kind === 'TYPICAL' || kind === 'REVELATORY');
-  const isRepeat = !!S.currentQuestionIsRepeat;
-  const collectsTraits = !isRepeat && !S.tutorial?.active;
-
-  // Exhaust this question id
-  S.answeredQuestionIds?.add?.(q.id);
-
-  // Track refresh history (to punish exact repeats)
-  let historyPatch = null;
-  if (a.label) {
-    const hist = { ...(S.questionHistory || {}) };
-    const previous = hist[String(q.id)];
-    const selected = Array.isArray(previous) ? [...previous] : (previous ? [previous] : []);
-    if (!selected.includes(a.label)) selected.push(a.label);
-    hist[String(q.id)] = selected;
-    historyPatch = hist;
+  if (!question || !answer) {
+    return { patch: {} };
   }
 
-  // A recycled card constrains the choice, so it no longer contributes traits.
-  if (collectsTraits) applyTraitDelta(q.id, kind, a.label);
+  const key = String(
+    answer.key || ''
+  ).toUpperCase();
 
-  const choiceEvidence = !collectsTraits
-    ? (S.choiceEvidence || [])
-    : [...(S.choiceEvidence || []), {
-        questionId: q.id,
-        questionText: q.text || q.title || 'A question without a name.',
-        chosenLabel: a.label || 'the unspoken answer',
-        kind,
-        category: q.category || '',
-        tier: Number(q.tier) || 0,
-        roundNumber: Number(S.roundNumber) || 1,
-      }].slice(-12);
+  const answerClass = String(
+    answer.answerClass || ''
+  ).toUpperCase();
 
-  const weightIsActive = (S.activeRoundEffects || []).some(e => e.type === 'ROUND_MODIFIER' && e.modifier === 'WEIGHT');
-  const fateThreadDelta = kind === OUTCOME.WRONG && weightIsActive ? -1 : 0;
+  const kind =
+    answerClass === 'TYPICAL' ||
+    answerClass === 'REVELATORY' ||
+    answerClass === 'WRONG'
+      ? answerClass
+      : getKind(question, key);
+
+  const effect =
+    OUTCOME_EFFECT[kind] || {
+      points: 0,
+      threadDelta: 0,
+    };
+
+  const weaveMultiplier =
+    state.weavePrimed
+      ? WEAVE.multiplier
+      : 1;
+
+  const pointsGained =
+    (effect.points || 0) *
+    weaveMultiplier;
+
+  const tally = {
+    ...(state.roundAnswerTally || {
+      A: 0,
+      B: 0,
+      C: 0,
+    }),
+  };
+
+  tally[key] =
+    (tally[key] || 0) + 1;
+
+  const isNotWrong =
+    kind === OUTCOME.TYPICAL ||
+    kind === OUTCOME.REVELATORY;
+
+  const isRepeat = Boolean(
+    state.currentQuestionIsRepeat
+  );
+
+  const collectsTraits =
+    !isRepeat &&
+    !state.tutorial?.active;
+
+  state.answeredQuestionIds?.add?.(
+    question.id
+  );
+
+  const answerIdentity =
+    answer.answerIdentity ||
+    answer.buttonLabel ||
+    answer.label ||
+    key;
+
+  /* ---------- Record answer history ---------- */
+
+  let historyPatch = null;
+
+  if (answerIdentity) {
+    const history = {
+      ...(state.questionHistory || {}),
+    };
+
+    const previous =
+      history[String(question.id)];
+
+    const selected = Array.isArray(
+      previous
+    )
+      ? [...previous]
+      : previous
+        ? [previous]
+        : [];
+
+    if (
+      !selected.includes(
+        answerIdentity
+      )
+    ) {
+      selected.push(answerIdentity);
+    }
+
+    history[String(question.id)] =
+      selected;
+
+    historyPatch = history;
+  }
+
+  /* ---------- Traits and evidence ---------- */
+
+  if (collectsTraits) {
+    applyTraitDelta(
+      question.id,
+      kind,
+      answerIdentity
+    );
+  }
+
+  const choiceEvidence =
+    !collectsTraits
+      ? state.choiceEvidence || []
+      : [
+          ...(state.choiceEvidence ||
+            []),
+          {
+            questionId:
+              question.id,
+            questionText:
+              question.text ||
+              question.title ||
+              'A question without a name.',
+            chosenLabel:
+              answerIdentity ||
+              'the unspoken answer',
+            kind,
+            category:
+              question.category ||
+              '',
+            tier:
+              Number(
+                question.tier
+              ) || 0,
+            roundNumber:
+              Number(
+                state.roundNumber
+              ) || 1,
+          },
+        ].slice(-12);
+
+  const weightIsActive = (
+    state.activeRoundEffects || []
+  ).some(
+    activeEffect =>
+      activeEffect.type ===
+        'ROUND_MODIFIER' &&
+      activeEffect.modifier ===
+        'WEIGHT'
+  );
+
+  const fateThreadDelta =
+    kind === OUTCOME.WRONG &&
+    weightIsActive
+      ? -1
+      : 0;
+
+  /* ---------- State patch ---------- */
 
   const patch = {
-    // scores/thread
-    roundScore: (S.roundScore || 0) + gainedPts,
-    thread: (S.thread || 0) + (eff.threadDelta || 0) + fateThreadDelta,
+    roundScore:
+      (state.roundScore || 0) +
+      pointsGained,
+
+    thread:
+      (state.thread || 0) +
+      (effect.threadDelta || 0) +
+      fateThreadDelta,
+
     weavePrimed: false,
 
-    // tallies + bookkeeping
     roundAnswerTally: tally,
-    notWrongCount: (S.notWrongCount || 0) + (isNotWrong ? 1 : 0),
+
+    notWrongCount:
+      (state.notWrongCount || 0) +
+      (isNotWrong ? 1 : 0),
+
     choiceEvidence,
 
-    // keep current question/answers for REVEAL UI
-    currentQuestion: S.currentQuestion,
-    currentAnswers : S.currentAnswers,
+    currentQuestion:
+      state.currentQuestion,
 
-    // payload for REVEAL
+    currentAnswers:
+      state.currentAnswers,
+
     lastOutcome: {
-      kind,                                  // 'TYPICAL' | 'REVELATORY' | 'WRONG'
+      kind,
       chosenKey: key,
-      chosenLabel: a.label || key,
-      pointsGained: gainedPts,
-      threadDelta: (eff.threadDelta || 0) + fateThreadDelta,
-      explanation: a.explanation || '',
-      questionText: q.text || q.title || '',
-      questionId: q.id,
-      insert: q.insert || '',
+      chosenLabel: answerIdentity,
+      pointsGained,
+      threadDelta:
+        (effect.threadDelta || 0) +
+        fateThreadDelta,
+      explanation:
+        answer.explanation || '',
+      questionText:
+        question.text ||
+        question.title ||
+        '',
+      questionId: question.id,
+      insert:
+        question.insert || '',
       isRepeat,
     },
   };
 
-  if (historyPatch) patch.questionHistory = historyPatch;
+  if (historyPatch) {
+    patch.questionHistory =
+      historyPatch;
+  }
 
-  // Difficulty stepper
-  if (isNotWrong && collectsTraits) {
-    const count = (S.correctAnswersThisDifficulty || 0) + 1;
-    if (count >= 2) {
-      patch.difficultyLevel = Math.min((S.difficultyLevel || 1) + 1, 7);
-      patch.correctAnswersThisDifficulty = 0;
+  /* ---------- Difficulty progression ---------- */
+
+  if (
+    isNotWrong &&
+    collectsTraits
+  ) {
+    const correctCount =
+      (state.correctAnswersThisDifficulty ||
+        0) + 1;
+
+    if (correctCount >= 2) {
+      patch.difficultyLevel =
+        Math.min(
+          (state.difficultyLevel ||
+            1) + 1,
+          7
+        );
+
+      patch.correctAnswersThisDifficulty =
+        0;
     } else {
-      patch.correctAnswersThisDifficulty = count;
+      patch.correctAnswersThisDifficulty =
+        correctCount;
     }
   } else {
-    patch.correctAnswersThisDifficulty = S.correctAnswersThisDifficulty || 0;
+    patch.correctAnswersThisDifficulty =
+      state.correctAnswersThisDifficulty ||
+      0;
   }
 
   return { patch };
 }
-
