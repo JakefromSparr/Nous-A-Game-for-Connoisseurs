@@ -8,8 +8,13 @@ import * as Q       from './engine/questionEngine.js';
 import * as Fate    from './engine/fateEngine.js';
 import * as Round   from './engine/roundEngine.js';
 import * as Tutor   from './engine/tutorialEngine.js';
-import { getObservedPresenceLine } from './engine/grinEngine.js';
+import * as Waiting from './engine/waitingRoomEngine.js';
 import { composeFinalReading } from './engine/readingEngine.js';
+import {
+  WAITING_ROOM_PHASES,
+  getWaitingRoomPhase,
+  isWaitingRoomResolved,
+} from './constants/waitingRoom.js';
 
 /* ---------------- helpers ---------------- */
 
@@ -75,6 +80,14 @@ function applyResult({ patch, next } = {}) {
       if (st.firstEntryActive) return !!st.tasselTaken;
       const loaded = Array.isArray(st.activeRoundEffects) && st.activeRoundEffects.length > 0;
       return loaded;
+    }
+    if (target === SCREENS.WAITING_ROOM && !st.tutorial?.active) {
+      const phase = getWaitingRoomPhase(st);
+      if (phase === WAITING_ROOM_PHASES.ENTRY) return false;
+      if (isWaitingRoomResolved(phase)) {
+        return i !== 1 || !UI.isWaitingRoomNousReady?.();
+      }
+      return i === 1;
     }
     if (target === SCREENS.ROUND_LOBBY && i === 0 && !st.tutorial?.active) {
       return !Round.canTieOff(st);
@@ -196,45 +209,44 @@ const ACTIONS = {
   /* WAITING ROOM */
   'participants-down': () => {
     const s = State.getState();
+    const phase = getWaitingRoomPhase(s);
 
-    if (s.waitingRoomReceiptVisible) {
-      State.clearWaitingRoomReceipt?.();
-      UI.showParticipantFlavor?.('');
-      return {};
+    if (phase !== WAITING_ROOM_PHASES.ENTRY) {
+      return { patch: Waiting.chooseTurnBack(s) };
     }
 
     UI.adjustParticipantCount(-1);
     return {};
   },
   'participants-up'  : () => {
-    if (State.getState().waitingRoomReceiptVisible) return {};
+    const s = State.getState();
+    const phase = getWaitingRoomPhase(s);
+
+    if (phase !== WAITING_ROOM_PHASES.ENTRY) {
+      return { patch: Waiting.chooseAccept(s) };
+    }
 
     UI.adjustParticipantCount(+1);
     return {};
   },
   'participants-confirm': () => {
     const s = State.getState();
+    const phase = getWaitingRoomPhase(s);
 
-    if (s.waitingRoomReceiptVisible) {
+    if (isWaitingRoomResolved(phase)) {
+      if (!UI.isWaitingRoomNousReady?.()) return {};
       const gathered = Math.max(1, Number(s.gatheredCount || UI.confirmParticipants()) || 1);
       State.initializeGame(gathered);
       return { next: SCREENS.GAME_LOBBY };
     }
 
+    if (phase !== WAITING_ROOM_PHASES.ENTRY) return {};
+
     const gathered = UI.confirmParticipants();
-    const observed = Number(gathered) + 1;
-    const line = getObservedPresenceLine(gathered);
+    const patch = Waiting.confirmGathering(gathered);
 
-    State.patch({
-      gatheredCount: gathered,
-      observedCount: observed,
-      waitingRoomReceiptText: line,
-      waitingRoomReceiptVisible: true,
-    });
-    UI.showParticipantFlavor(line);
-
-    // Stay on WAITING_ROOM while the receipt phase shows.
-    return {};
+    // Stay on WAITING_ROOM while the apparatus completes its count.
+    return { patch };
   },
 
   /* GAME LOBBY */

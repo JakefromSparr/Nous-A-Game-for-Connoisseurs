@@ -1,5 +1,5 @@
 // src/engine/tutorialEngine.js
-import { State }   from '../state.js';
+import { DEFAULTS, State } from '../state.js';
 import { UI }      from '../ui.js';
 import { SCREENS } from '../constants/screens.js';
 import { COACH_STEPS } from '../constants/tutorialSteps.js';
@@ -126,7 +126,7 @@ export function startTutorial() {
   const answeredQuestionIds = new Set(State.getState().answeredQuestionIds || []);
   TUTORIAL_IDS.forEach((id) => answeredQuestionIds.delete(id));
   State.patch({
-    thread: 4,
+    thread: DEFAULTS.baseT0,
     answeredQuestionIds,
     tutorial: { active: true, step: 0, awaitRevealToAdvance: false },
   });

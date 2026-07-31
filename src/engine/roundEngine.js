@@ -77,12 +77,12 @@ function prepareRoundQuestions(state, isIntroRound) {
 export function startRound(state) {
   const isIntroRound = !!state.firstEntryActive;
   const t0 = isIntroRound
-    ? (state.tasselTaken ? 4 : 3)
+    ? (state.tasselTaken ? DEFAULTS.baseT0 : DEFAULTS.baseT0 - 1)
     : state.tasselTaken
       ? clamp(
         Number(state.nextRoundT0) || DEFAULTS.baseT0,
         DEFAULTS.baseT0,
-        DEFAULTS.baseT0 + 2
+        DEFAULTS.baseT0 + DEFAULTS.tasselCarryCap
       )
       : DEFAULTS.baseT0;
   const roundQuestions = prepareRoundQuestions(state, isIntroRound);
@@ -129,7 +129,7 @@ export function canTieOff(state) {
 
 export function tieOff(state) {
   const carriedThread = state.tasselTaken
-    ? clamp(Number(state.thread) || 0, 0, 2)
+    ? clamp(Number(state.thread) || 0, 0, DEFAULTS.tasselCarryCap)
     : 0;
 
   return {
