@@ -28,13 +28,13 @@ function buildAnswers(q) {
   let answers = shuffled.slice(0, 3).map((a, i) => {
     const label = a.label ?? '';
     return {
-      key: keys[i],
-      label: label || 'The words have faded.',
-      buttonLabel: a.buttonLabel ?? '',
-      answerClass: String(a.answerClass || '').toUpperCase(),
-      explanation: a.explanation || 'Nous offers no explanation.',
-      unavailable: selectedLabels.has(label),
-    };
+  key: keys[i],
+  label: label || 'The words have faded.',
+  buttonLabel: a.buttonLabel,
+  answerClass: String(a.answerClass || '').toUpperCase(),
+  explanation: a.explanation || 'Nous offers no explanation.',
+  unavailable: selectedLabels.has(label),
+};
   });
 
   if (S.activePowerUps?.includes('REMOVE_WRONG_ANSWER')) {
