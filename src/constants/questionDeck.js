@@ -11,10 +11,25 @@
  *   text: string,
  *   insert?: string,
  *   answers: [
- *     { label: string, answerClass: AnswerClass, explanation: string },
- *     { label: string, answerClass: AnswerClass, explanation: string },
- *     { label: string, answerClass: AnswerClass, explanation: string }
- *   ]
+  {
+    label: string,
+    buttonLabel?: string,
+    answerClass: AnswerClass,
+    explanation: string
+  },
+  {
+    label: string,
+    buttonLabel?: string,
+    answerClass: AnswerClass,
+    explanation: string
+  },
+  {
+    label: string,
+    buttonLabel?: string,
+    answerClass: AnswerClass,
+    explanation: string
+  }
+]
  * }} Question
  */
 
@@ -637,12 +652,10 @@ const questions = [
       },
     ],
   },
-
-  // ─────────────────── Tier 3 ───────────────────
   {
-    id: 301,
+    id: 210,
     category: 'Body',
-    tier: 3,
+    tier: 2,
     title: 'Behind You',
     text:
       "If it's pitch dark, and you're all alone, can you see what is standing behind you?",
@@ -667,9 +680,9 @@ const questions = [
     ],
   },
 {
-    id: 302,
+    id: 211,
     category: 'Soul',
-    tier: 3,
+    tier: 2,
     title: 'Left Behind',
     text: 'When you leave the past behind, what remains?',
     answers: [
@@ -694,9 +707,9 @@ const questions = [
     ],
   },
 {
-    id: 303,
+    id: 212,
     category: 'Body',
-    tier: 3,
+    tier: 2,
     title: 'Empty Lungs',
     text: 'What makes up the majority of the air we breathe?',
     answers: [
@@ -720,6 +733,177 @@ const questions = [
       },
     ],
   },
+  {
+  id: 213,
+  category: 'Body',
+  tier: 2,
+  title: 'A Drink to Forget',
+  text: 'What do you lose when you drink from the River Lethe?',
+  answers: [
+    {
+      label: 'Your memories',
+      answerClass: 'TYPICAL',
+      explanation:
+        'The old warning. Lethe takes what you knew, then leaves you unable to name what is missing.',
+    },
+    {
+      label: 'Your thirst',
+      answerClass: 'REVELATORY',
+      explanation:
+        'Also true. The smaller loss comes first. That is often how the larger one goes unnoticed.',
+    },
+    {
+      label: 'Your way',
+      answerClass: 'WRONG',
+      explanation:
+        'No. But it makes one wonder, do you remember how you got here?',
+    },
+  ],
+},
+
+{
+  id: 214,
+  category: 'Soul',
+  tier: 2,
+  title: 'Fair Exchange',
+  text: 'When the Tylwyth Teg take a child, what do they leave behind?',
+  answers: [
+    {
+      label: 'A changeling',
+      answerClass: 'TYPICAL',
+      explanation:
+        'The familiar warning. Something remains in the child’s place, similar enough to delay certainty.',
+    },
+    {
+      label: 'The child’s family',
+      answerClass: 'REVELATORY',
+      explanation:
+        'Also left behind. The taken one vanishes quickly. Those who remain must decide when absence becomes proof.',
+    },
+    {
+      label: 'A familiar',
+      answerClass: 'WRONG',
+      explanation:
+        'No. A familiar serves a practitioner. You're thinking of when something looks familiar but isn't.',
+    },
+  ],
+},
+
+{
+  id: 215,
+  category: 'Body',
+  tier: 2,
+  title: 'Borrowed Time',
+  text: 'What does a Raven Mocker take from the dying?',
+  answers: [
+    {
+      label: 'Their heart',
+      answerClass: 'TYPICAL',
+      explanation:
+        'The visible theft. The stories give the Raven Mocker a body part because bodies are easier to believe.',
+    },
+    {
+      label: 'Their remaining time',
+      answerClass: 'REVELATORY',
+      explanation:
+        'The greater theft. It takes the years the victim might have lived and makes them its own.',
+    },
+    {
+      label: 'Their certainty',
+      answerClass: 'WRONG',
+      explanation:
+        'No. There is another entity, a presence, that takes that.',
+    },
+  ],
+},
+
+{
+  id: 216,
+  category: 'Soul',
+  tier: 2,
+  title: 'No Goodbye',
+  text: 'If you leave the board without saying goodbye, what remains open?',
+  answers: [
+    {
+      label: 'The session',
+      answerClass: 'TYPICAL',
+      explanation:
+        'Correct. Without a closing, the exchange remains unfinished, even after someone walks away.',
+    },
+    {
+      label: 'The invitation',
+      answerClass: 'REVELATORY',
+      explanation:
+        'Also correct. Leaving does not necessarily withdraw permission for something else to follow.',
+    },
+    {
+      label: 'The way out',
+      answerClass: 'WRONG',
+      explanation:
+        'No. If you leave too early, before the last question, then you have left the escape behind.',
+    },
+  ],
+},
+
+{
+  id: 217,
+  category: 'Body',
+  tier: 2,
+  title: 'A Warning',
+  text: 'What has risen when the hair on the back of your neck stands on end?',
+  answers: [
+    {
+      label: 'The hair',
+      answerClass: 'TYPICAL',
+      explanation:
+        'The visible answer. Tiny muscles contracted and pulled each hair upright.',
+    },
+    {
+      label: 'Your suspicion',
+      answerClass: 'REVELATORY',
+      explanation:
+        'Also true. You noticed the feeling because some part of you had already decided it meant something.',
+    },
+    {
+      label: 'The temperature',
+      answerClass: 'WRONG',
+      explanation:
+        'No. Cold can cause the reaction, but that would mean the temperature had fallen.',
+    },
+  ],
+},
+   // ─────────────────── Tier 3 ───────────────────
+  {
+  id: 301,
+  category: 'Mind',
+  tier: 3,
+  title: 'Little Nothing',
+  text: 'What does a Nyitus leave after it has fed?',
+  answers: [
+    {
+      label: 'Your Memory',
+      buttonLabel: 'How You Remember',
+      answerClass: 'TYPICAL',
+      explanation:
+        'Correct. It leaves your memory behind, though missing pieces. Some presences are more thorough.',
+    },
+    {
+      label: 'Your Memory',
+      buttonLabel: 'How You’re Remembered',
+      answerClass: 'REVELATORY',
+      explanation:
+        'Not wrong. People will remember you, your memory will persist. Unlike some entities.',
+    },
+    {
+      label: 'Your Memory',
+      buttonLabel: 'What You Remember',
+      answerClass: 'WRONG',
+      explanation:
+        'Wrong. You won’t remember it being there at all. Strangely like another presence, too.',
+    },
+  ],
+},
+  
   // ─────────────────── Tier 4 ───────────────────
 { 
 
