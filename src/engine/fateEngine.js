@@ -22,9 +22,10 @@ export function applyChoice(choice, state) {
   const title = state.activeFateCard?.title || '';
   const activeRoundEffects = [...(state.activeRoundEffects || [])];
   const activePowerUps = [...(state.activePowerUps || [])];
+  const effects = flatten(choice?.effect);
   let roundScore = state.roundScore || 0;
 
-  for (const effect of flatten(choice?.effect)) {
+  for (const effect of effects) {
     if (effect.type === 'SCORE' || effect.type === 'IMMEDIATE_SCORE') {
       roundScore += Number(effect.value || 0);
     } else if (effect.type === 'POWER_UP' && effect.power) {
@@ -36,11 +37,21 @@ export function applyChoice(choice, state) {
 
   const completedFateCardIds = new Set(state.completedFateCardIds || []);
   if (state.activeFateCard?.id != null) completedFateCardIds.add(state.activeFateCard.id);
+  const fateEvidence = [...(state.fateEvidence || []), {
+    cardId: state.activeFateCard?.id ?? null,
+    cardTitle: title || 'Fate',
+    choiceId: choice?.id ?? null,
+    chosenLabel: choice?.label || 'The unmarked choice',
+    effectTypes: effects.map((effect) => effect.type).filter(Boolean),
+    roundNumber: Number(state.roundNumber) || 1,
+  }].slice(-6);
+
   return {
     roundScore: Math.max(0, roundScore),
     activeRoundEffects,
     activePowerUps,
     completedFateCardIds,
+    fateEvidence,
     activeFateCard: null,
     fateChoices: [null, null, null],
   };
