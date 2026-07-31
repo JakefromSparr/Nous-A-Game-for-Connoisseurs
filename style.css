@@ -1261,13 +1261,15 @@ p + p {
 }
 
 [data-screen='FINAL_READING'] {
-  overflow: visible;
+  justify-content: flex-start;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 [data-screen='FINAL_READING']::before {
   content: '';
   position: absolute;
-  inset: 9px -8px -9px 10px;
+  inset: 9px 8px 9px 10px;
   z-index: -1;
   background: #bca984;
   border: 1px solid #786342;
@@ -1282,6 +1284,15 @@ p + p {
 
 #reading-body p {
   margin-top: 1rem;
+  font-size: clamp(1rem, 1.8vw, 1.18rem);
+  line-height: 1.5;
+}
+
+#reading-body p:last-child {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(36, 28, 21, 0.28);
+  font-style: italic;
 }
 
 /* Three-key physical controller */
