@@ -500,13 +500,13 @@ const questions = [
     text: 'What did Schrödinger do with his box?',
     answers: [
       {
-        label: 'Advocated Superposition.',
+        label: 'Inspired Superposition.',
         answerClass: 'TYPICAL',
         explanation:
           'His thought experiment inspired later interpretations about superposition.',
       },
       {
-        label: 'Critiqued Quantum Mechanics.',
+        label: 'Critiqued Quantum.',
         answerClass: 'REVELATORY',
         explanation:
           "Schrödinger's thought experiment was a critique of quantum mechanics, not an endorsement.",
@@ -849,7 +849,7 @@ const questions = [
   category: 'Soul',
   tier: 2,
   title: 'No Goodbye',
-  text: 'If you leave the board without saying goodbye, what remains open?',
+  text: 'If you leave the Ouija board without saying goodbye, what remains open?',
   answers: [
     {
       label: 'The session',
@@ -880,7 +880,7 @@ const questions = [
   text: 'What has risen when the hair on the back of your neck stands on end?',
   answers: [
     {
-      label: 'The hair',
+      label: 'Your hair',
       answerClass: 'TYPICAL',
       explanation:
         'The visible answer. Tiny muscles contracted and pulled each hair upright.',
