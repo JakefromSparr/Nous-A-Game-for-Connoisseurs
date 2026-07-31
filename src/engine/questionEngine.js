@@ -414,19 +414,11 @@ export function drawQuestion(
 
 /* ---------- Evaluate the selected answer ---------- */
 
-export function evaluate(
-  choiceIndex,
-  _state
-) {
+export function evaluate(choiceIndex, _state) {
   const state = State.getState();
 
-  const question =
-    state.currentQuestion;
-
-  const answer =
-    state.currentAnswers?.[
-      choiceIndex
-    ];
+  const question = state.currentQuestion;
+  const answer = state.currentAnswers?.[choiceIndex];
 
   if (!question || !answer) {
     return { patch: {} };
@@ -447,25 +439,64 @@ export function evaluate(
       ? answerClass
       : getKind(question, key);
 
-  const effect =
+  const baseEffect =
     OUTCOME_EFFECT[kind] || {
       points: 0,
       threadDelta: 0,
     };
 
-  const hasMatchbook =
-  state.activePowerUps?.includes('MATCHBOOK');
+  /*
+   * Fate effects applying to this answer class.
+   *
+   * DYN006 uses:
+   * ANSWER_CLASS_BONUS + TYPICAL + threadDelta: 1
+   * ANSWER_CLASS_BONUS + REVELATORY + pointsDelta: 1
+   * ANSWER_CLASS_BONUS + WRONG + threadDelta: -1
+   */
+  const answerClassEffects = (
+    state.activeRoundEffects || []
+  ).filter(activeEffect =>
+    activeEffect.type === 'ANSWER_CLASS_BONUS' &&
+    String(
+      activeEffect.answerClass || ''
+    ).toUpperCase() === kind
+  );
 
-const weaveMultiplier =
-  state.weavePrimed
-    ? hasMatchbook
-      ? 3
-      : WEAVE.multiplier
-    : 1;
+  const bonusPoints =
+    answerClassEffects.reduce(
+      (total, activeEffect) =>
+        total +
+        (Number(activeEffect.pointsDelta) || 0),
+      0
+    );
+
+  const bonusThread =
+    answerClassEffects.reduce(
+      (total, activeEffect) =>
+        total +
+        (Number(activeEffect.threadDelta) || 0),
+      0
+    );
+
+  /*
+   * Weave normally uses WEAVE.multiplier.
+   * Possessing the Matchbook raises that multiplier to 3.
+   */
+  const hasMatchbook =
+    state.activePowerUps?.includes('MATCHBOOK');
+
+  const weaveMultiplier =
+    state.weavePrimed
+      ? hasMatchbook
+        ? 3
+        : WEAVE.multiplier
+      : 1;
 
   const pointsGained =
-    (effect.points || 0) *
-    weaveMultiplier;
+    (
+      (baseEffect.points || 0) +
+      bonusPoints
+    ) * weaveMultiplier;
 
   const tally = {
     ...(state.roundAnswerTally || {
@@ -512,19 +543,13 @@ const weaveMultiplier =
     const previous =
       history[String(question.id)];
 
-    const selected = Array.isArray(
-      previous
-    )
+    const selected = Array.isArray(previous)
       ? [...previous]
       : previous
         ? [previous]
         : [];
 
-    if (
-      !selected.includes(
-        answerIdentity
-      )
-    ) {
+    if (!selected.includes(answerIdentity)) {
       selected.push(answerIdentity);
     }
 
@@ -548,11 +573,9 @@ const weaveMultiplier =
     !collectsTraits
       ? state.choiceEvidence || []
       : [
-          ...(state.choiceEvidence ||
-            []),
+          ...(state.choiceEvidence || []),
           {
-            questionId:
-              question.id,
+            questionId: question.id,
             questionText:
               question.text ||
               question.title ||
@@ -562,34 +585,44 @@ const weaveMultiplier =
               'the unspoken answer',
             kind,
             category:
-              question.category ||
-              '',
+              question.category || '',
             tier:
-              Number(
-                question.tier
-              ) || 0,
+              Number(question.tier) || 0,
             roundNumber:
-              Number(
-                state.roundNumber
-              ) || 1,
+              Number(state.roundNumber) || 1,
           },
         ].slice(-12);
 
+  /*
+   * The Weight modifier already adds one additional
+   * Thread loss to Wrong answers.
+   */
   const weightIsActive = (
     state.activeRoundEffects || []
-  ).some(
-    activeEffect =>
-      activeEffect.type ===
-        'ROUND_MODIFIER' &&
-      activeEffect.modifier ===
-        'WEIGHT'
+  ).some(activeEffect =>
+    activeEffect.type === 'ROUND_MODIFIER' &&
+    activeEffect.modifier === 'WEIGHT'
   );
 
-  const fateThreadDelta =
+  const weightThreadPenalty =
     kind === OUTCOME.WRONG &&
     weightIsActive
       ? -1
       : 0;
+
+  /*
+   * Normal Wrong answer:
+   * baseEffect.threadDelta = -2
+   *
+   * Match Maker Wrong answer:
+   * bonusThread = -1
+   *
+   * Total = -3
+   */
+  const totalThreadDelta =
+    (baseEffect.threadDelta || 0) +
+    bonusThread +
+    weightThreadPenalty;
 
   /* ---------- State patch ---------- */
 
@@ -600,8 +633,7 @@ const weaveMultiplier =
 
     thread:
       (state.thread || 0) +
-      (effect.threadDelta || 0) +
-      fateThreadDelta,
+      totalThreadDelta,
 
     weavePrimed: false,
 
@@ -624,9 +656,7 @@ const weaveMultiplier =
       chosenKey: key,
       chosenLabel: answerIdentity,
       pointsGained,
-      threadDelta:
-        (effect.threadDelta || 0) +
-        fateThreadDelta,
+      threadDelta: totalThreadDelta,
       explanation:
         answer.explanation || '',
       questionText:
@@ -647,32 +677,26 @@ const weaveMultiplier =
 
   /* ---------- Difficulty progression ---------- */
 
-  if (
-    isNotWrong &&
-    collectsTraits
-  ) {
+  if (isNotWrong && collectsTraits) {
     const correctCount =
-      (state.correctAnswersThisDifficulty ||
-        0) + 1;
+      (state.correctAnswersThisDifficulty || 0) +
+      1;
 
     if (correctCount >= 2) {
       patch.difficultyLevel =
         Math.min(
-          (state.difficultyLevel ||
-            1) + 1,
+          (state.difficultyLevel || 1) + 1,
           7
         );
 
-      patch.correctAnswersThisDifficulty =
-        0;
+      patch.correctAnswersThisDifficulty = 0;
     } else {
       patch.correctAnswersThisDifficulty =
         correctCount;
     }
   } else {
     patch.correctAnswersThisDifficulty =
-      state.correctAnswersThisDifficulty ||
-      0;
+      state.correctAnswersThisDifficulty || 0;
   }
 
   return { patch };
