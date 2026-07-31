@@ -453,10 +453,15 @@ export function evaluate(
       threadDelta: 0,
     };
 
-  const weaveMultiplier =
-    state.weavePrimed
-      ? WEAVE.multiplier
-      : 1;
+  const hasMatchbook =
+  state.activePowerUps?.includes('MATCHBOOK');
+
+const weaveMultiplier =
+  state.weavePrimed
+    ? hasMatchbook
+      ? 3
+      : WEAVE.multiplier
+    : 1;
 
   const pointsGained =
     (effect.points || 0) *
